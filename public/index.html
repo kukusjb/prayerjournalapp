@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Prayer Journal">
 <meta name="theme-color" content="#3B4A66">
 <title>Personal Prayer Journal</title>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
   :root{
     --paper: #EAE3D2;
@@ -234,9 +235,9 @@
     margin-top: 10px;
     flex-wrap: wrap;
   }
-  .addbar input[type="text"], .addbar select, textarea{
+  .addbar input[type="text"], .addbar input[type="email"], .addbar select, textarea{
     font-family: inherit;
-    font-size: 0.88rem;
+    font-size: 16px;
     padding: 9px 10px;
     border: 1px solid var(--rule);
     border-radius: 6px;
@@ -393,6 +394,24 @@
     font-size: 0.72rem;
     text-decoration: underline;
   }
+  details.contact-details{
+    margin-top: 18px;
+    font-size: 0.85rem;
+    text-align:center;
+  }
+  details.contact-details summary{
+    cursor: pointer;
+    color: var(--tab-guidance);
+    text-decoration: underline;
+  }
+  details.contact-details .contact-body{
+    text-align:left;
+    margin-top:10px;
+  }
+  details.contact-details textarea{
+    width:100%;
+    min-height: 80px;
+  }
 </style>
 </head>
 <body>
@@ -459,7 +478,7 @@
     <div class="panel" id="panel-lists">
       <section class="block">
         <h2 class="serif">Search</h2>
-        <input type="text" id="searchItems" placeholder="Search by person, need, or category" style="width:100%;">
+        <input type="text" id="searchItems" placeholder="Search by person, need, or category" style="width:100%; font-size:16px; font-family:inherit; padding:9px 10px; border:1px solid var(--rule); border-radius:6px;">
       </section>
 
       <section class="block">
@@ -576,7 +595,23 @@
       </section>
     </div>
   </main>
-  <div class="footnote">Based on "How to Develop Your Personal Prayer Journal"</div>
+  <details class="contact-details">
+    <summary>Contact the developer</summary>
+    <div class="contact-body">
+      <div class="addbar">
+        <input type="text" id="contactName" placeholder="Your name (optional)" style="flex:1 1 100%;">
+      </div>
+      <div class="addbar" style="margin-top:8px;">
+        <input type="email" id="contactEmail" placeholder="Your email, if you'd like a reply (optional)" style="flex:1 1 100%;">
+      </div>
+      <textarea id="contactMessage" placeholder="Questions, bugs, or suggestions..." style="margin-top:8px;"></textarea>
+      <div id="turnstileWidget" style="margin-top:8px;"></div>
+      <div class="addbar" style="margin-top:8px;">
+        <button id="sendContactBtn">Send</button>
+      </div>
+      <div class="verse-status" id="contactStatus"></div>
+    </div>
+  </details>
   <div style="text-align:center; margin-top:10px;">
     <button class="sign-out-btn" id="signOutBtn">Sign out</button>
   </div>
@@ -586,6 +621,10 @@
 const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 let data = null;
 let searchTerm = "";
+// This is your Turnstile SITE key — it's meant to be public, safe to leave in client code.
+// Only the SECRET key (stored on the server as a secret) needs to stay hidden.
+const TURNSTILE_SITE_KEY = "0x4AAAAAAE0kU0gsr2vdKXqX";
+let turnstileWidgetId = null;
 
 function todayStr(d = new Date()){
   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -1049,6 +1088,53 @@ function setupTabs(){
 }
 
 function setupForms(){
+  document.getElementById("sendContactBtn").addEventListener("click", async ()=>{
+    const nameEl = document.getElementById("contactName");
+    const emailEl = document.getElementById("contactEmail");
+    const messageEl = document.getElementById("contactMessage");
+    const statusEl = document.getElementById("contactStatus");
+    const message = messageEl.value.trim();
+    if(!message){
+      statusEl.textContent = "Enter a message before sending.";
+      statusEl.classList.add("error");
+      return;
+    }
+    const turnstileToken = (typeof turnstile !== "undefined" && turnstileWidgetId !== null)
+      ? turnstile.getResponse(turnstileWidgetId) : "";
+    if(!turnstileToken){
+      statusEl.textContent = "Please complete the verification check.";
+      statusEl.classList.add("error");
+      return;
+    }
+    statusEl.textContent = "Sending...";
+    statusEl.classList.remove("error");
+    try{
+      const resp = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: nameEl.value.trim(),
+          email: emailEl.value.trim(),
+          message,
+          turnstileToken
+        })
+      });
+      const json = await resp.json().catch(()=>({}));
+      if(!resp.ok || json.error){
+        throw new Error(json.error || "Could not send your message.");
+      }
+      statusEl.textContent = "Thanks! Your message was sent.";
+      nameEl.value = ""; emailEl.value = ""; messageEl.value = "";
+    }catch(e){
+      statusEl.textContent = e.message || "Something went wrong. Try again.";
+      statusEl.classList.add("error");
+    }finally{
+      if(typeof turnstile !== "undefined" && turnstileWidgetId !== null){
+        turnstile.reset(turnstileWidgetId);
+      }
+    }
+  });
+
   document.getElementById("lookupVerseBtn").addEventListener("click", lookupVerse);
 
   document.getElementById("clearVerseBtn").addEventListener("click", async ()=>{
@@ -1164,6 +1250,19 @@ async function startApp(){
   setupForms();
   renderAll();
   showApp();
+  renderTurnstile();
+}
+
+function renderTurnstile(){
+  if(typeof turnstile === "undefined"){
+    // Script hasn't loaded yet (slow network) — try again shortly.
+    setTimeout(renderTurnstile, 500);
+    return;
+  }
+  if(turnstileWidgetId !== null) return; // already rendered
+  turnstileWidgetId = turnstile.render("#turnstileWidget", {
+    sitekey: TURNSTILE_SITE_KEY
+  });
 }
 
 async function sendMagicLink(){
