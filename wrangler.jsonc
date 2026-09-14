@@ -23,6 +23,16 @@
       "binding": "RESEND_API_KEY",
       "store_id": "5b4b2ecc4eed4f52b07e21f54bb25f4a",
       "secret_name": "RESEND_API_KEY"
+    },
+    {
+      "binding": "CONTACT_EMAIL",
+      "store_id": "5b4b2ecc4eed4f52b07e21f54bb25f4a",
+      "secret_name": "CONTACT_EMAIL"
+    },
+    {
+      "binding": "TURNSTILE_SECRET_KEY",
+      "store_id": "5b4b2ecc4eed4f52b07e21f54bb25f4a",
+      "secret_name": "TURNSTILE_SECRET_KEY"
     }
   ]
 }
