@@ -22,6 +22,18 @@ export async function onRequestGet(context) {
     return jsonResponse({ error: "ESV_API_KEY is not configured on the server." }, 500);
   }
 
+  let apiKey;
+  try {
+    // Secrets Store bindings expose the value via an async .get() call
+    // rather than as a plain string.
+    apiKey = await env.ESV_API_KEY.get();
+  } catch (e) {
+    return jsonResponse({ error: "Could not read ESV_API_KEY from Secrets Store." }, 500);
+  }
+  if (!apiKey) {
+    return jsonResponse({ error: "ESV_API_KEY secret is empty." }, 500);
+  }
+
   const params = new URLSearchParams({
     q,
     "include-headings": "false",
@@ -34,7 +46,7 @@ export async function onRequestGet(context) {
   let resp;
   try {
     resp = await fetch("https://api.esv.org/v3/passage/text/?" + params.toString(), {
-      headers: { "Authorization": "Token " + env.ESV_API_KEY }
+      headers: { "Authorization": "Token " + apiKey }
     });
   } catch (e) {
     return jsonResponse({ error: "Could not reach the ESV API." }, 502);
