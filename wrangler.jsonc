@@ -5,5 +5,24 @@
   "assets": {
     "directory": "./public",
     "binding": "ASSETS"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "prayerjournal-db",
+      "database_id": "29042503-4c22-44f4-bab7-a83fa7f49420"
+    }
+  ],
+  "secrets_store_secrets": [
+    {
+      "binding": "ESV_API_KEY",
+      "store_id": "5b4b2ecc4eed4f52b07e21f54bb25f4a",
+      "secret_name": "ESV_API_KEY"
+    },
+    {
+      "binding": "RESEND_API_KEY",
+      "store_id": "5b4b2ecc4eed4f52b07e21f54bb25f4a",
+      "secret_name": "RESEND_API_KEY"
+    }
+  ]
 }
