@@ -360,10 +360,66 @@
     width:100%;
     margin-top: 8px;
   }
+  #authScreen{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    padding: 20px;
+  }
+  .auth-card{
+    max-width: 380px;
+    width:100%;
+    background: var(--paper-light);
+    border-radius: 8px;
+    padding: 28px 22px;
+    box-shadow: 0 2px 0 var(--rule) inset;
+  }
+  .auth-card h1{
+    font-size: 1.3rem;
+    margin: 0 0 8px;
+    text-align:center;
+  }
+  .auth-card .sub{
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    text-align:center;
+    margin-bottom: 16px;
+  }
+  #sendLinkBtn{ width:100%; }
+  .sign-out-btn{
+    border:none; background:none; cursor:pointer;
+    color: var(--ink-soft);
+    font-size: 0.72rem;
+    text-decoration: underline;
+  }
 </style>
 </head>
 <body>
-<div id="app">
+<div id="authScreen">
+  <div class="auth-card">
+    <h1 class="serif">Personal Prayer Journal</h1>
+    <p class="sub">Sign in with your email — we'll send you a link, no password to remember.</p>
+    <div id="authStep1">
+      <div class="addbar">
+        <input type="email" id="authEmail" placeholder="you@example.com" style="flex:1 1 100%;">
+      </div>
+      <div class="addbar" style="margin-top:8px;">
+        <button id="sendLinkBtn">Send sign-in link</button>
+      </div>
+    </div>
+    <div id="authStep2" style="display:none;">
+      <p class="sub">Check your email for a sign-in link. It expires in 15 minutes and works on any device.</p>
+    </div>
+    <div class="verse-status" id="authStatus"></div>
+  </div>
+</div>
+
+<div id="loadingScreen" style="display:none;">
+  <p class="sub" style="text-align:center; padding-top:60px;">Loading your journal...</p>
+</div>
+
+<div id="app" style="display:none;">
   <header>
     <h1 class="serif">Personal Prayer Journal</h1>
     <div class="date" id="todayLabel"></div>
@@ -521,11 +577,13 @@
     </div>
   </main>
   <div class="footnote">Based on "How to Develop Your Personal Prayer Journal"</div>
+  <div style="text-align:center; margin-top:10px;">
+    <button class="sign-out-btn" id="signOutBtn">Sign out</button>
+  </div>
 </div>
 
 <script>
 const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const STORAGE_KEY = "journal";
 let data = null;
 let searchTerm = "";
 
@@ -561,10 +619,30 @@ function defaultData(){
   };
 }
 
+const SESSION_KEY = "sessionToken";
+
+function getSessionToken(){
+  try{ return localStorage.getItem(SESSION_KEY); }catch(e){ return null; }
+}
+function setSessionToken(token){
+  try{ localStorage.setItem(SESSION_KEY, token); }catch(e){}
+}
+function clearSessionToken(){
+  try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
+}
+
 async function loadData(){
+  const token = getSessionToken();
+  const resp = await fetch("/api/journal", {
+    headers: { "Authorization": "Bearer " + token }
+  });
+  if(resp.status === 401){
+    clearSessionToken();
+    return false;
+  }
+  const json = await resp.json().catch(()=>({}));
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    data = raw ? JSON.parse(raw) : defaultData();
+    data = json.data ? JSON.parse(json.data) : defaultData();
   }catch(e){
     data = defaultData();
   }
@@ -587,13 +665,22 @@ async function loadData(){
     (data.weeklyGoals||[]).forEach(g => g.checks = [false,false,false,false,false,false,false]);
     await saveData();
   }
+  return true;
 }
 
 async function saveData(){
+  const token = getSessionToken();
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    await fetch("/api/journal", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ data: JSON.stringify(data) })
+    });
   }catch(e){
-    console.error("Storage error", e);
+    console.error("Save error", e);
   }
 }
 
@@ -1046,11 +1133,116 @@ function setupForms(){
   });
 }
 
-(async function init(){
-  await loadData();
+function showAuthScreen(message, isError){
+  document.getElementById("authScreen").style.display = "flex";
+  document.getElementById("loadingScreen").style.display = "none";
+  document.getElementById("app").style.display = "none";
+  const statusEl = document.getElementById("authStatus");
+  statusEl.textContent = message || "";
+  statusEl.classList.toggle("error", !!isError);
+}
+
+function showApp(){
+  document.getElementById("authScreen").style.display = "none";
+  document.getElementById("loadingScreen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+}
+
+function showLoading(){
+  document.getElementById("authScreen").style.display = "none";
+  document.getElementById("loadingScreen").style.display = "block";
+  document.getElementById("app").style.display = "none";
+}
+
+async function startApp(){
+  const ok = await loadData();
+  if(!ok){
+    showAuthScreen("Your session expired. Please sign in again.", true);
+    return;
+  }
   setupTabs();
   setupForms();
   renderAll();
+  showApp();
+}
+
+async function sendMagicLink(){
+  const emailInput = document.getElementById("authEmail");
+  const email = emailInput.value.trim();
+  const statusEl = document.getElementById("authStatus");
+  if(!email || !email.includes("@")){
+    statusEl.textContent = "Enter a valid email address.";
+    statusEl.classList.add("error");
+    return;
+  }
+  statusEl.textContent = "Sending...";
+  statusEl.classList.remove("error");
+  try{
+    const resp = await fetch("/api/auth/request-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    const json = await resp.json().catch(()=>({}));
+    if(!resp.ok || json.error){
+      throw new Error(json.error || "Could not send the link.");
+    }
+    document.getElementById("authStep1").style.display = "none";
+    document.getElementById("authStep2").style.display = "block";
+    statusEl.textContent = "";
+  }catch(e){
+    statusEl.textContent = e.message || "Something went wrong. Try again.";
+    statusEl.classList.add("error");
+  }
+}
+
+async function verifyMagicLink(token){
+  showLoading();
+  try{
+    const resp = await fetch("/api/auth/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token })
+    });
+    const json = await resp.json().catch(()=>({}));
+    if(!resp.ok || json.error){
+      throw new Error(json.error || "That link isn't valid.");
+    }
+    setSessionToken(json.sessionToken);
+    // remove the token from the URL so it can't be reused or bookmarked
+    window.history.replaceState({}, document.title, window.location.pathname);
+    await startApp();
+  }catch(e){
+    showAuthScreen(e.message || "That link isn't valid. Request a new one.", true);
+  }
+}
+
+(async function init(){
+  document.getElementById("sendLinkBtn").addEventListener("click", sendMagicLink);
+  document.getElementById("signOutBtn").addEventListener("click", ()=>{
+    clearSessionToken();
+    document.getElementById("authStep1").style.display = "block";
+    document.getElementById("authStep2").style.display = "none";
+    document.getElementById("authEmail").value = "";
+    showAuthScreen("");
+  });
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const linkToken = urlParams.get("token");
+
+  if(linkToken){
+    await verifyMagicLink(linkToken);
+    return;
+  }
+
+  const existingToken = getSessionToken();
+  if(existingToken){
+    showLoading();
+    await startApp();
+    return;
+  }
+
+  showAuthScreen("");
 })();
 </script>
 </body>
