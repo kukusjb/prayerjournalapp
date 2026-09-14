@@ -7,21 +7,20 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Prayer Journal">
-<meta name="theme-color" content="#3B4A66">
+<meta name="theme-color" content="#3F5B4C">
 <title>Personal Prayer Journal</title>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
   :root{
-    --paper: #EAE3D2;
-    --paper-light: #F6F2E7;
-    --ink: #2B3244;
-    --ink-soft: #5B6478;
-    --rule: #C9BFA4;
-    --tab-resources: #9C5A3D;
-    --tab-lists: #3E5C4E;
-    --tab-guidance: #3B4A66;
-    --gold: #A9843E;
-    --danger: #8B3A3A;
+    --paper: #F5F1E7;
+    --paper-light: #FBF9F3;
+    --ink: #24302B;
+    --ink-soft: #7A7267;
+    --rule: #E1D9C8;
+    --primary: #3F5B4C;
+    --primary-dark: #33493D;
+    --gold: #B08D4F;
+    --danger: #8B4040;
   }
   * { box-sizing: border-box; }
   html,body{
@@ -30,6 +29,10 @@
     color: var(--ink);
     font-family: "Avenir Next","Segoe UI","Helvetica Neue",Arial,sans-serif;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ transition: none !important; animation: none !important; }
   }
   .serif{
     font-family: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
@@ -42,47 +45,52 @@
     flex-direction:column;
     padding-bottom: 40px;
   }
+  @media (min-width: 640px){
+    #app{ max-width: 720px; }
+    main{ padding: 28px 40px 36px !important; }
+  }
   header{
-    padding: 22px 20px 8px;
+    padding: 18px 20px 6px;
     text-align:center;
   }
   header h1{
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     margin:0;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
     color: var(--ink);
+    font-weight:600;
   }
   header .date{
-    margin-top:4px;
-    font-size: 0.8rem;
+    margin-top:2px;
+    font-size: 0.78rem;
     color: var(--ink-soft);
   }
   nav.tabs{
     display:flex;
-    padding: 14px 12px 0;
-    gap: 6px;
+    padding: 14px 16px 0;
+    gap: 4px;
+    background: var(--paper);
   }
   nav.tabs button{
     flex:1;
     border:none;
     cursor:pointer;
-    padding: 12px 4px 14px;
-    font-size: 0.78rem;
+    padding: 10px 6px;
+    font-size: 0.8rem;
     font-family: inherit;
     font-weight:600;
-    color: #F6F2E7;
-    clip-path: polygon(8% 0, 92% 0, 100% 100%, 0% 100%);
-    opacity: 0.72;
-    transform: translateY(4px);
-    transition: transform 0.15s ease, opacity 0.15s ease;
+    color: var(--ink-soft);
+    background: var(--rule);
+    border-radius: 999px;
+    transition: background 0.15s ease, color 0.15s ease;
   }
   nav.tabs button.active{
-    opacity:1;
-    transform: translateY(0);
+    background: var(--primary);
+    color: #fff;
   }
-  nav.tabs button[data-tab="today"]{ background: var(--tab-guidance); }
-  nav.tabs button[data-tab="lists"]{ background: var(--tab-lists); }
-  nav.tabs button[data-tab="guidance"]{ background: var(--tab-resources); }
+  nav.tabs button:hover:not(.active){
+    background: #D8CDB4;
+  }
 
   main{
     background: var(--paper-light);
@@ -93,6 +101,63 @@
   .panel{ display:none; }
   .panel.active{ display:block; }
 
+  .today-greeting{
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    margin-bottom: 14px;
+  }
+  .search-wrap{
+    position:relative;
+    display:flex;
+    align-items:center;
+  }
+  .search-wrap .search-icon{
+    position:absolute;
+    left:12px;
+    font-size:0.85rem;
+    opacity:0.5;
+    pointer-events:none;
+  }
+  .search-wrap input{
+    width:100%;
+    font-size:16px;
+    font-family:inherit;
+    padding:11px 36px 11px 34px;
+    border:1px solid var(--rule);
+    border-radius:999px;
+    background:#fff;
+  }
+  .clear-search-btn{
+    position:absolute;
+    right:8px;
+    border:none;
+    background:none;
+    cursor:pointer;
+    color: var(--ink-soft);
+    font-size:1.1rem;
+    line-height:1;
+    padding:4px 6px;
+  }
+  .today-progress{
+    margin-bottom: 14px;
+  }
+  .today-progress .progress-text{
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .today-progress .progress-track{
+    height: 6px;
+    background: var(--rule);
+    border-radius: 999px;
+    overflow:hidden;
+  }
+  .today-progress .progress-fill{
+    height:100%;
+    background: var(--primary);
+    border-radius: 999px;
+    transition: width 0.25s ease;
+  }
   .purpose-banner{
     border-left: 3px solid var(--gold);
     padding: 10px 14px;
@@ -118,11 +183,16 @@
   .item-row{
     display:flex;
     flex-direction:column;
-    gap: 6px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--rule);
+    gap: 8px;
+    padding: 14px 14px;
+    margin-bottom: 10px;
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(36,48,43,0.04);
+    transition: box-shadow 0.15s ease;
   }
-  .item-row:last-child{ border-bottom:none; }
+  .item-row:last-child{ margin-bottom: 0; }
   .item-main{
     display:flex;
     align-items:center;
@@ -130,18 +200,36 @@
   }
   .item-actions{
     display:flex;
-    justify-content:flex-end;
+    justify-content:space-between;
     align-items:center;
     gap:16px;
+    padding-top: 6px;
+    border-top: 1px solid var(--rule);
+  }
+  .item-actions .prayed-label{
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    display:flex;
+    align-items:center;
+    gap:6px;
+    cursor:pointer;
+  }
+  .item-actions .prayed-label.done{
+    color: var(--primary);
+    font-weight:600;
+  }
+  .item-actions .right-actions{
+    display:flex;
+    gap:14px;
   }
   .item-row input[type="checkbox"]{
     width: 19px; height:19px;
-    accent-color: var(--tab-guidance);
+    accent-color: var(--primary);
     flex-shrink:0;
   }
   .item-row .name{
     flex:1;
-    font-size: 0.92rem;
+    font-size: 0.95rem;
     line-height:1.3;
   }
   .item-row .name.done{
@@ -154,9 +242,9 @@
   .item-row .name .need{
     display:block;
     font-weight: 400;
-    font-size: 0.83rem;
+    font-size: 0.85rem;
     color: var(--ink-soft);
-    margin-top: 1px;
+    margin-top: 2px;
   }
   .item-row .name.done .person,
   .item-row .name.done .need{
@@ -166,7 +254,7 @@
     font-size: 0.68rem;
     color: var(--ink-soft);
     background: var(--paper);
-    padding: 2px 7px;
+    padding: 3px 8px;
     border-radius: 10px;
     white-space:nowrap;
   }
@@ -185,12 +273,16 @@
     padding: 2px 0;
   }
   .answered-row{
-    padding: 10px 0;
-    border-bottom: 1px solid var(--rule);
+    padding: 14px;
+    margin-bottom: 10px;
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(36,48,43,0.04);
   }
-  .answered-row:last-child{ border-bottom:none; }
-  .answered-row .person{ font-weight:600; font-size:0.92rem; }
-  .answered-row .need{ font-size:0.83rem; color: var(--ink-soft); margin-top:1px; }
+  .answered-row:last-child{ margin-bottom:0; }
+  .answered-row .person{ font-weight:600; font-size:0.95rem; }
+  .answered-row .need{ font-size:0.85rem; color: var(--ink-soft); margin-top:2px; }
   .answered-row .meta{
     display:flex;
     justify-content:space-between;
@@ -212,7 +304,7 @@
   }
   .answered-row .restore-btn{
     border:none; background:none; cursor:pointer;
-    color: var(--tab-lists);
+    color: var(--primary);
     font-size: 0.75rem;
     text-decoration: underline;
   }
@@ -248,7 +340,7 @@
   .addbar select{ flex: 1 1 100px; }
   .addbar button, .addgoal button{
     border:none;
-    background: var(--tab-guidance);
+    background: var(--primary);
     color:#fff;
     padding: 9px 14px;
     border-radius: 6px;
@@ -291,7 +383,7 @@
   }
   .week-grid input[type="checkbox"]{
     width:18px; height:18px;
-    accent-color: var(--tab-resources);
+    accent-color: var(--primary);
   }
 
   .addgoal{
@@ -355,7 +447,7 @@
   }
   details.manual-verse summary{
     cursor: pointer;
-    color: var(--tab-guidance);
+    color: var(--primary);
   }
   details.manual-verse textarea{
     width:100%;
@@ -401,7 +493,7 @@
   }
   details.contact-details summary{
     cursor: pointer;
-    color: var(--tab-guidance);
+    color: var(--primary);
     text-decoration: underline;
   }
   details.contact-details .contact-body{
@@ -453,6 +545,8 @@
   <main>
     <!-- TODAY -->
     <div class="panel active" id="panel-today">
+      <div id="todayGreeting" class="today-greeting"></div>
+      <div id="todayProgress" class="today-progress" style="display:none;"></div>
       <div id="purposeBanner" style="display:none" class="purpose-banner"></div>
 
       <section class="block">
@@ -477,8 +571,11 @@
     <!-- LISTS -->
     <div class="panel" id="panel-lists">
       <section class="block">
-        <h2 class="serif">Search</h2>
-        <input type="text" id="searchItems" placeholder="Search by person, need, or category" style="width:100%; font-size:16px; font-family:inherit; padding:9px 10px; border:1px solid var(--rule); border-radius:6px;">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchItems" placeholder="Search people, requests, or categories">
+          <button id="clearSearchBtn" class="clear-search-btn" style="display:none;" aria-label="Clear search">×</button>
+        </div>
       </section>
 
       <section class="block">
@@ -504,25 +601,25 @@
         <div class="category-tags" id="categoryTags"></div>
       </section>
 
-      <section class="block">
+      <section class="block" id="section-daily">
         <h2 class="serif">Daily prayer list</h2>
         <div id="list-daily"></div>
       </section>
-      <section class="block">
+      <section class="block" id="section-weekly">
         <h2 class="serif">Weekly prayer list</h2>
         <div class="sub">Categories rotate through the week — see the Today tab</div>
         <div id="list-weekly"></div>
       </section>
-      <section class="block">
+      <section class="block" id="section-monthly">
         <h2 class="serif">Monthly prayer list</h2>
         <div id="list-monthly"></div>
       </section>
-      <section class="block">
+      <section class="block" id="section-annual">
         <h2 class="serif">Annual prayer list</h2>
         <div id="list-annual"></div>
       </section>
 
-      <section class="block">
+      <section class="block" id="section-answered">
         <h2 class="serif">Answered prayers</h2>
         <div class="sub">Prayers you've marked as answered, most recent first</div>
         <div id="answeredList"></div>
@@ -623,7 +720,7 @@ let data = null;
 let searchTerm = "";
 // This is your Turnstile SITE key — it's meant to be public, safe to leave in client code.
 // Only the SECRET key (stored on the server as a secret) needs to stay hidden.
-const TURNSTILE_SITE_KEY = "0x4AAAAAAE0kU0gsr2vdKXqX";
+const TURNSTILE_SITE_KEY = "YOUR_TURNSTILE_SITE_KEY";
 let turnstileWidgetId = null;
 
 function todayStr(d = new Date()){
@@ -767,22 +864,33 @@ function itemRow(item){
 
   const row = el("div",{class:"item-row"});
   const mainLine = el("div",{class:"item-main"});
-  const cb = el("input",{attrs:{type:"checkbox"}});
-  cb.checked = !!prayedNow;
-  cb.addEventListener("change", async ()=>{
-    item.lastPrayed = cb.checked ? today : null;
-    await saveData();
-    renderAll();
-  });
   const name = el("span",{class:"name"+(prayedNow?" done":"")});
   name.appendChild(el("span",{class:"person", text:item.person}));
   if(item.need && item.need.trim()){
     name.appendChild(el("span",{class:"need", text:item.need}));
   }
   const tag = el("span",{class:"tag", text:item.category});
-  mainLine.appendChild(cb); mainLine.appendChild(name); mainLine.appendChild(tag);
+  mainLine.appendChild(name); mainLine.appendChild(tag);
 
   const actions = el("div",{class:"item-actions"});
+
+  const prayedLabel = el("label",{class:"prayed-label"+(prayedNow?" done":"")});
+  const cb = el("input",{attrs:{type:"checkbox"}});
+  cb.checked = !!prayedNow;
+  cb.style.display = "none";
+  cb.addEventListener("change", async ()=>{
+    item.lastPrayed = cb.checked ? today : null;
+    await saveData();
+    renderAll();
+  });
+  prayedLabel.appendChild(cb);
+  prayedLabel.appendChild(document.createTextNode((prayedNow ? "✓" : "○") + " Prayed today"));
+  prayedLabel.addEventListener("click", (e)=>{
+    // clicking the label toggles the (hidden) checkbox, which triggers save+re-render
+    if(e.target !== cb) cb.click();
+  });
+
+  const rightActions = el("div",{class:"right-actions"});
   const answerBtn = el("button",{class:"answer-btn", text:"Mark answered"});
   answerBtn.addEventListener("click", async ()=>{
     item.answered = true;
@@ -796,7 +904,9 @@ function itemRow(item){
     await saveData();
     renderAll();
   });
-  actions.appendChild(answerBtn); actions.appendChild(del);
+  rightActions.appendChild(answerBtn); rightActions.appendChild(del);
+
+  actions.appendChild(prayedLabel); actions.appendChild(rightActions);
 
   row.appendChild(mainLine); row.appendChild(actions);
   return row;
@@ -846,12 +956,28 @@ function answeredRow(item){
 }
 
 function renderListsByFrequency(){
+  const freqLabels = {
+    daily: "Add someone you want to remember every day.",
+    weekly: "Add someone you'd like to pray for on a rotating weekly basis.",
+    monthly: "Useful for people or needs you want to revisit once a month.",
+    annual: "For events or people you pray for once a year."
+  };
   ["daily","weekly","monthly","annual"].forEach(freq=>{
     const container = document.getElementById("list-"+freq);
+    const section = document.getElementById("section-"+freq);
     container.innerHTML = "";
+    const totalForFreq = data.items.filter(i=>i.frequency===freq && !i.answered).length;
     const items = data.items.filter(i=>i.frequency===freq && !i.answered && matchesSearch(i));
+
+    if(totalForFreq === 0 && !searchTerm){
+      // Nothing has ever been added here — no need to show an empty section.
+      if(section) section.style.display = "none";
+      return;
+    }
+    if(section) section.style.display = "block";
+
     if(items.length===0){
-      container.appendChild(el("div",{class:"empty", text: searchTerm ? "No matches." : "Nothing here yet."}));
+      container.appendChild(el("div",{class:"empty", text: searchTerm ? "No matches." : freqLabels[freq]}));
       return;
     }
     items.forEach(item=>container.appendChild(itemRow(item)));
@@ -860,11 +986,20 @@ function renderListsByFrequency(){
 
 function renderAnsweredList(){
   const container = document.getElementById("answeredList");
+  const section = document.getElementById("section-answered");
   if(!container) return;
   container.innerHTML = "";
+  const totalAnswered = data.items.filter(i=>i.answered).length;
   const items = data.items
     .filter(i=>i.answered && matchesSearch(i))
     .sort((a,b)=> (b.answeredDate||"").localeCompare(a.answeredDate||""));
+
+  if(totalAnswered === 0 && !searchTerm){
+    if(section) section.style.display = "none";
+    return;
+  }
+  if(section) section.style.display = "block";
+
   if(items.length===0){
     container.appendChild(el("div",{class:"empty", text: searchTerm ? "No matches." : "No answered prayers recorded yet."}));
     return;
@@ -876,6 +1011,10 @@ function renderToday(){
   const now = new Date();
   document.getElementById("todayLabel").textContent =
     now.toLocaleDateString(undefined,{weekday:"long", year:"numeric", month:"long", day:"numeric"});
+
+  const hour = now.getHours();
+  const greeting = hour < 12 ? "Good morning" : (hour < 18 ? "Good afternoon" : "Good evening");
+  document.getElementById("todayGreeting").textContent = greeting + " — here's who's on your heart today.";
 
   // purpose banner
   const banner = document.getElementById("purposeBanner");
@@ -891,7 +1030,7 @@ function renderToday(){
   dailyWrap.innerHTML = "";
   const dailyItems = data.items.filter(i=>i.frequency==="daily" && !i.answered);
   if(dailyItems.length===0){
-    dailyWrap.appendChild(el("div",{class:"empty", text:"Add daily needs under Prayer Lists."}));
+    dailyWrap.appendChild(el("div",{class:"empty", text:"Add daily needs under Prayer Lists to see them here."}));
   } else {
     dailyItems.forEach(i=>dailyWrap.appendChild(itemRow(i)));
   }
@@ -908,9 +1047,29 @@ function renderToday(){
   weeklyWrap.innerHTML = "";
   const weeklyItems = data.items.filter(i=>i.frequency==="weekly" && i.category===todayCategory && !i.answered);
   if(weeklyItems.length===0){
-    weeklyWrap.appendChild(el("div",{class:"empty", text:"No weekly items in this category yet."}));
+    weeklyWrap.appendChild(el("div",{class:"empty", text:"Nothing in this category yet — add someone under Prayer Lists."}));
   } else {
     weeklyItems.forEach(i=>weeklyWrap.appendChild(itemRow(i)));
+  }
+
+  // today's prayer progress (daily + today's weekly focus combined)
+  const todaysPrayerItems = dailyItems.concat(weeklyItems);
+  const progressEl = document.getElementById("todayProgress");
+  if(todaysPrayerItems.length === 0){
+    progressEl.style.display = "none";
+  } else {
+    const todayStrVal = todayStr();
+    const prayedCount = todaysPrayerItems.filter(i => i.lastPrayed === todayStrVal).length;
+    progressEl.style.display = "block";
+    progressEl.innerHTML = "";
+    const pct = Math.round((prayedCount / todaysPrayerItems.length) * 100);
+    const text = el("div",{class:"progress-text", text: prayedCount + " of " + todaysPrayerItems.length + " prayed for today"});
+    const track = el("div",{class:"progress-track"});
+    const fill = el("div",{class:"progress-fill"});
+    fill.style.width = pct + "%";
+    track.appendChild(fill);
+    progressEl.appendChild(text);
+    progressEl.appendChild(track);
   }
 
   // today's goal checks
@@ -1151,8 +1310,19 @@ function setupForms(){
 
   document.getElementById("searchItems").addEventListener("input", (e)=>{
     searchTerm = e.target.value.trim().toLowerCase();
+    document.getElementById("clearSearchBtn").style.display = e.target.value ? "block" : "none";
     renderListsByFrequency();
     renderAnsweredList();
+  });
+
+  document.getElementById("clearSearchBtn").addEventListener("click", ()=>{
+    const input = document.getElementById("searchItems");
+    input.value = "";
+    searchTerm = "";
+    document.getElementById("clearSearchBtn").style.display = "none";
+    renderListsByFrequency();
+    renderAnsweredList();
+    input.focus();
   });
 
   document.getElementById("addItemBtn").addEventListener("click", async ()=>{
@@ -1231,7 +1401,7 @@ function showAuthScreen(message, isError){
 function showApp(){
   document.getElementById("authScreen").style.display = "none";
   document.getElementById("loadingScreen").style.display = "none";
-  document.getElementById("app").style.display = "block";
+  document.getElementById("app").style.display = "flex";
 }
 
 function showLoading(){
@@ -1254,15 +1424,23 @@ async function startApp(){
 }
 
 function renderTurnstile(){
+  if(!TURNSTILE_SITE_KEY || TURNSTILE_SITE_KEY === "YOUR_TURNSTILE_SITE_KEY"){
+    // Not configured yet — leave the widget area empty rather than risk breaking the page.
+    return;
+  }
   if(typeof turnstile === "undefined"){
     // Script hasn't loaded yet (slow network) — try again shortly.
     setTimeout(renderTurnstile, 500);
     return;
   }
   if(turnstileWidgetId !== null) return; // already rendered
-  turnstileWidgetId = turnstile.render("#turnstileWidget", {
-    sitekey: TURNSTILE_SITE_KEY
-  });
+  try{
+    turnstileWidgetId = turnstile.render("#turnstileWidget", {
+      sitekey: TURNSTILE_SITE_KEY
+    });
+  }catch(e){
+    console.error("Turnstile render failed", e);
+  }
 }
 
 async function sendMagicLink(){
