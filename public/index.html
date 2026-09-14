@@ -23,6 +23,15 @@
     --danger: #8B4040;
   }
   * { box-sizing: border-box; }
+  .visually-hidden{
+    position:absolute;
+    width:1px; height:1px;
+    padding:0; margin:-1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+    white-space:nowrap;
+    border:0;
+  }
   html,body{
     margin:0; padding:0;
     background: var(--paper);
@@ -875,9 +884,8 @@ function itemRow(item){
   const actions = el("div",{class:"item-actions"});
 
   const prayedLabel = el("label",{class:"prayed-label"+(prayedNow?" done":"")});
-  const cb = el("input",{attrs:{type:"checkbox"}});
+  const cb = el("input",{class:"visually-hidden", attrs:{type:"checkbox"}});
   cb.checked = !!prayedNow;
-  cb.style.display = "none";
   cb.addEventListener("change", async ()=>{
     item.lastPrayed = cb.checked ? today : null;
     await saveData();
@@ -885,10 +893,6 @@ function itemRow(item){
   });
   prayedLabel.appendChild(cb);
   prayedLabel.appendChild(document.createTextNode((prayedNow ? "✓" : "○") + " Prayed today"));
-  prayedLabel.addEventListener("click", (e)=>{
-    // clicking the label toggles the (hidden) checkbox, which triggers save+re-render
-    if(e.target !== cb) cb.click();
-  });
 
   const rightActions = el("div",{class:"right-actions"});
   const answerBtn = el("button",{class:"answer-btn", text:"Mark answered"});
