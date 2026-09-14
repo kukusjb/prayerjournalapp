@@ -33,6 +33,11 @@
       "binding": "TURNSTILE_SECRET_KEY",
       "store_id": "5b4b2ecc4eed4f52b07e21f54bb25f4a",
       "secret_name": "TURNSTILE_SECRET_KEY"
+    },
+    {
+      "binding": "RESEND_FROM_ADDRESS",
+      "store_id": "5b4b2ecc4eed4f52b07e21f54bb25f4a",
+      "secret_name": "RESEND_FROM_ADDRESS"
     }
   ]
 }
