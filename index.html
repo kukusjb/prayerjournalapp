@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Prayer Journal">
+<meta name="theme-color" content="#3B4A66">
+<title>Personal Prayer Journal</title>
+<style>
+  :root{
+    --paper: #EAE3D2;
+    --paper-light: #F6F2E7;
+    --ink: #2B3244;
+    --ink-soft: #5B6478;
+    --rule: #C9BFA4;
+    --tab-resources: #9C5A3D;
+    --tab-lists: #3E5C4E;
+    --tab-guidance: #3B4A66;
+    --gold: #A9843E;
+    --danger: #8B3A3A;
+  }
+  * { box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Avenir Next","Segoe UI","Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .serif{
+    font-family: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  }
+  #app{
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display:flex;
+    flex-direction:column;
+    padding-bottom: 40px;
+  }
+  header{
+    padding: 22px 20px 8px;
+    text-align:center;
+  }
+  header h1{
+    font-size: 1.5rem;
+    margin:0;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+  }
+  header .date{
+    margin-top:4px;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+  nav.tabs{
+    display:flex;
+    padding: 14px 12px 0;
+    gap: 6px;
+  }
+  nav.tabs button{
+    flex:1;
+    border:none;
+    cursor:pointer;
+    padding: 12px 4px 14px;
+    font-size: 0.78rem;
+    font-family: inherit;
+    font-weight:600;
+    color: #F6F2E7;
+    clip-path: polygon(8% 0, 92% 0, 100% 100%, 0% 100%);
+    opacity: 0.72;
+    transform: translateY(4px);
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+  nav.tabs button.active{
+    opacity:1;
+    transform: translateY(0);
+  }
+  nav.tabs button[data-tab="today"]{ background: var(--tab-guidance); }
+  nav.tabs button[data-tab="lists"]{ background: var(--tab-lists); }
+  nav.tabs button[data-tab="guidance"]{ background: var(--tab-resources); }
+
+  main{
+    background: var(--paper-light);
+    flex:1;
+    padding: 20px 18px 30px;
+    box-shadow: 0 -2px 0 var(--rule) inset;
+  }
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+
+  .purpose-banner{
+    border-left: 3px solid var(--gold);
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    font-family: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    font-style: italic;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    background: rgba(169,132,62,0.08);
+  }
+  section.block{ margin-bottom: 26px; }
+  section.block h2{
+    font-size: 1.02rem;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+  section.block .sub{
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+  }
+
+  .item-row{
+    display:flex;
+    flex-direction:column;
+    gap: 6px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .item-row:last-child{ border-bottom:none; }
+  .item-main{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .item-actions{
+    display:flex;
+    justify-content:flex-end;
+    align-items:center;
+    gap:16px;
+  }
+  .item-row input[type="checkbox"]{
+    width: 19px; height:19px;
+    accent-color: var(--tab-guidance);
+    flex-shrink:0;
+  }
+  .item-row .name{
+    flex:1;
+    font-size: 0.92rem;
+    line-height:1.3;
+  }
+  .item-row .name.done{
+    color: var(--ink-soft);
+  }
+  .item-row .name .person{
+    display:block;
+    font-weight: 600;
+  }
+  .item-row .name .need{
+    display:block;
+    font-weight: 400;
+    font-size: 0.83rem;
+    color: var(--ink-soft);
+    margin-top: 1px;
+  }
+  .item-row .name.done .person,
+  .item-row .name.done .need{
+    color: var(--ink-soft);
+  }
+  .item-row .tag{
+    font-size: 0.68rem;
+    color: var(--ink-soft);
+    background: var(--paper);
+    padding: 2px 7px;
+    border-radius: 10px;
+    white-space:nowrap;
+  }
+  .item-row .del{
+    border:none; background:none; cursor:pointer;
+    color: var(--danger);
+    font-size: 0.78rem;
+    padding: 2px 4px;
+    flex-shrink:0;
+  }
+  .item-row .answer-btn{
+    border:none; background:none; cursor:pointer;
+    color: var(--gold);
+    font-size: 0.75rem;
+    text-decoration: underline;
+    padding: 2px 0;
+  }
+  .answered-row{
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .answered-row:last-child{ border-bottom:none; }
+  .answered-row .person{ font-weight:600; font-size:0.92rem; }
+  .answered-row .need{ font-size:0.83rem; color: var(--ink-soft); margin-top:1px; }
+  .answered-row .meta{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:6px;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+  }
+  .answered-row .meta .tag{
+    font-size: 0.68rem;
+    background: var(--paper);
+    padding: 2px 7px;
+    border-radius: 10px;
+  }
+  .answered-row .actions{
+    display:flex;
+    gap:14px;
+    margin-top:6px;
+  }
+  .answered-row .restore-btn{
+    border:none; background:none; cursor:pointer;
+    color: var(--tab-lists);
+    font-size: 0.75rem;
+    text-decoration: underline;
+  }
+  .answered-row textarea.note{
+    margin-top:6px;
+    min-height: 44px;
+    font-size: 0.85rem;
+    font-style: normal;
+  }
+  .empty{
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    font-style: italic;
+    padding: 6px 0;
+  }
+
+  .addbar{
+    display:flex;
+    gap:8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .addbar input[type="text"], .addbar select, textarea{
+    font-family: inherit;
+    font-size: 0.88rem;
+    padding: 9px 10px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--ink);
+  }
+  .addbar input[type="text"]{ flex: 2 1 140px; }
+  .addbar select{ flex: 1 1 100px; }
+  .addbar button, .addgoal button{
+    border:none;
+    background: var(--tab-guidance);
+    color:#fff;
+    padding: 9px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor:pointer;
+    flex: 0 0 auto;
+  }
+  textarea{
+    width:100%;
+    min-height: 70px;
+    resize: vertical;
+    font-family: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    font-style: italic;
+    font-size: 0.92rem;
+  }
+
+  .goal-row{
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .goal-row:last-child{ border-bottom:none; }
+  .goal-top{
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+  }
+  .goal-top .name{ flex:1; font-size:0.9rem; }
+  .week-grid{
+    display:flex;
+    gap:6px;
+    margin-top:8px;
+  }
+  .week-grid label{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    font-size: 0.62rem;
+    color: var(--ink-soft);
+    gap:3px;
+  }
+  .week-grid input[type="checkbox"]{
+    width:18px; height:18px;
+    accent-color: var(--tab-resources);
+  }
+
+  .addgoal{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+  }
+  .addgoal input{ flex:1; }
+
+  .category-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:8px;
+  }
+  .category-tags span{
+    font-size: 0.72rem;
+    background: var(--paper);
+    padding: 4px 9px;
+    border-radius: 12px;
+    color: var(--ink-soft);
+  }
+  .footnote{
+    text-align:center;
+    font-size: 0.7rem;
+    color: var(--ink-soft);
+    margin-top: 24px;
+    font-style: italic;
+  }
+  .verse-status{
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    min-height: 1em;
+  }
+  .verse-status.error{ color: var(--danger); }
+  .verse-display{
+    border-left: 3px solid var(--gold);
+    background: rgba(169,132,62,0.08);
+    padding: 12px 14px;
+    margin-top: 10px;
+  }
+  .verse-text{
+    font-family: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    font-style: italic;
+    font-size: 1rem;
+    line-height: 1.55;
+    color: var(--ink);
+    white-space: pre-wrap;
+  }
+  .verse-ref{
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    text-align: right;
+  }
+  .verse-display .answer-btn{ margin-top: 8px; }
+  details.manual-verse{
+    margin-top: 14px;
+    font-size: 0.85rem;
+  }
+  details.manual-verse summary{
+    cursor: pointer;
+    color: var(--tab-guidance);
+  }
+  details.manual-verse textarea{
+    width:100%;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1 class="serif">Personal Prayer Journal</h1>
+    <div class="date" id="todayLabel"></div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="today" class="active">Today</button>
+    <button data-tab="lists">Prayer Lists</button>
+    <button data-tab="guidance">Guidance</button>
+  </nav>
+
+  <main>
+    <!-- TODAY -->
+    <div class="panel active" id="panel-today">
+      <div id="purposeBanner" style="display:none" class="purpose-banner"></div>
+
+      <section class="block">
+        <h2 class="serif">Daily</h2>
+        <div class="sub">Persons and needs you pray for every day</div>
+        <div id="dailyList"></div>
+      </section>
+
+      <section class="block">
+        <h2 class="serif" id="weeklyHeading">Today's category</h2>
+        <div class="sub" id="weeklySub"></div>
+        <div id="weeklyList"></div>
+      </section>
+
+      <section class="block">
+        <h2 class="serif">This week's goals</h2>
+        <div class="sub">Check off today's column as you complete each one</div>
+        <div id="todayGoalsList"></div>
+      </section>
+    </div>
+
+    <!-- LISTS -->
+    <div class="panel" id="panel-lists">
+      <section class="block">
+        <h2 class="serif">Search</h2>
+        <input type="text" id="searchItems" placeholder="Search by person, need, or category" style="width:100%;">
+      </section>
+
+      <section class="block">
+        <h2 class="serif">Add to your prayer list</h2>
+        <div class="addbar">
+          <input type="text" id="newItemPerson" placeholder="Person">
+          <input type="text" id="newItemNeed" placeholder="Need or request">
+        </div>
+        <div class="addbar" style="margin-top:8px;">
+          <select id="newItemCategory"></select>
+          <select id="newItemFrequency">
+            <option value="daily">Daily</option>
+            <option value="weekly" selected>Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="annual">Annual</option>
+          </select>
+          <button id="addItemBtn">Add</button>
+        </div>
+        <div class="addbar" style="margin-top:14px;">
+          <input type="text" id="newCategoryName" placeholder="Add a new category">
+          <button id="addCategoryBtn">Add category</button>
+        </div>
+        <div class="category-tags" id="categoryTags"></div>
+      </section>
+
+      <section class="block">
+        <h2 class="serif">Daily prayer list</h2>
+        <div id="list-daily"></div>
+      </section>
+      <section class="block">
+        <h2 class="serif">Weekly prayer list</h2>
+        <div class="sub">Categories rotate through the week — see the Today tab</div>
+        <div id="list-weekly"></div>
+      </section>
+      <section class="block">
+        <h2 class="serif">Monthly prayer list</h2>
+        <div id="list-monthly"></div>
+      </section>
+      <section class="block">
+        <h2 class="serif">Annual prayer list</h2>
+        <div id="list-annual"></div>
+      </section>
+
+      <section class="block">
+        <h2 class="serif">Answered prayers</h2>
+        <div class="sub">Prayers you've marked as answered, most recent first</div>
+        <div id="answeredList"></div>
+      </section>
+    </div>
+
+    <!-- GUIDANCE -->
+    <div class="panel" id="panel-guidance">
+      <section class="block">
+        <h2 class="serif">Weekly memory verse</h2>
+        <div class="sub">Look it up from the ESV, or paste it in yourself</div>
+        <div class="addbar">
+          <input type="text" id="verseBook" placeholder="Book (e.g. John)" style="flex:2 1 100px;">
+          <input type="text" id="verseChapter" placeholder="Ch." style="flex:0 0 60px;">
+          <input type="text" id="verseVerse" placeholder="Verse(s)" style="flex:0 0 80px;">
+        </div>
+        <div class="addbar" style="margin-top:8px;">
+          <button id="lookupVerseBtn">Look up ESV text</button>
+        </div>
+        <div class="verse-status" id="verseStatus"></div>
+        <div class="verse-display" id="verseDisplay" style="display:none;">
+          <div class="verse-text" id="verseText"></div>
+          <div class="verse-ref" id="verseRef"></div>
+          <button class="answer-btn" id="clearVerseBtn">Clear and start a new verse</button>
+        </div>
+        <details class="manual-verse">
+          <summary>Paste the text manually instead</summary>
+          <div class="addbar" style="margin-top:8px;">
+            <input type="text" id="manualVerseRef" placeholder="Reference (e.g. Philippians 4:6-7)" style="flex:1 1 100%;">
+          </div>
+          <textarea id="manualVerseText" placeholder="Paste the verse text here"></textarea>
+          <div class="addbar" style="margin-top:8px;">
+            <button id="saveManualVerseBtn">Save verse</button>
+          </div>
+        </details>
+      </section>
+
+      <section class="block">
+        <h2 class="serif">Life purpose</h2>
+        <textarea id="purposeInput" placeholder="Write a short statement of your life purpose..."></textarea>
+      </section>
+
+      <section class="block">
+        <h2 class="serif">Life goals</h2>
+        <div id="lifeGoalsList"></div>
+        <div class="addgoal">
+          <input type="text" id="newLifeGoal" placeholder="Add a life goal">
+          <button id="addLifeGoalBtn">Add</button>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2 class="serif">Monthly goals</h2>
+        <div class="sub">Set these during your extended monthly prayer time</div>
+        <div id="monthlyGoalsList"></div>
+        <div class="addgoal">
+          <input type="text" id="newMonthlyGoal" placeholder="Add a monthly goal">
+          <button id="addMonthlyGoalBtn">Add</button>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2 class="serif">Weekly goals</h2>
+        <div class="sub">Set these during weekly planning; track daily on the chart</div>
+        <div id="weeklyGoalsList"></div>
+        <div class="addgoal">
+          <input type="text" id="newWeeklyGoal" placeholder="Add a weekly goal">
+          <button id="addWeeklyGoalBtn">Add</button>
+        </div>
+      </section>
+    </div>
+  </main>
+  <div class="footnote">Based on "How to Develop Your Personal Prayer Journal"</div>
+</div>
+
+<script>
+const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const STORAGE_KEY = "journal";
+let data = null;
+let searchTerm = "";
+
+function todayStr(d = new Date()){
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function currentMonthStr(d = new Date()){
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+}
+function weekStartStr(d = new Date()){
+  const day = d.getDay();
+  const sun = new Date(d);
+  sun.setDate(d.getDate()-day);
+  return todayStr(sun);
+}
+function uid(){ return Math.random().toString(36).slice(2,10); }
+
+function defaultData(){
+  return {
+    categories: ["Family members","Relatives","Close friends","Business associates",
+      "Persons in authority","Missionaries","Church leaders","Disciples","Countries"],
+    items: [],
+    purpose: "",
+    lifeGoals: [],
+    monthlyGoals: [],
+    weeklyGoals: [
+      {id: uid(), text: "Read and mark my Bible ten minutes a day", checks: [false,false,false,false,false,false,false]},
+      {id: uid(), text: "Memorize a new verse each week", checks: [false,false,false,false,false,false,false]},
+      {id: uid(), text: "Have individual Bible study one hour each week", checks: [false,false,false,false,false,false,false]}
+    ],
+    weekStart: weekStartStr(),
+    memoryVerse: null
+  };
+}
+
+async function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    data = raw ? JSON.parse(raw) : defaultData();
+  }catch(e){
+    data = defaultData();
+  }
+  // migrate older entries that only had a single "name" field
+  (data.items||[]).forEach(item=>{
+    if(item.person === undefined){
+      item.person = item.name || "";
+      item.need = "";
+      delete item.name;
+    }
+    if(item.answered === undefined) item.answered = false;
+    if(item.answeredDate === undefined) item.answeredDate = null;
+    if(item.answerNote === undefined) item.answerNote = "";
+  });
+  if(data.memoryVerse === undefined) data.memoryVerse = null;
+  // weekly reset
+  const ws = weekStartStr();
+  if(data.weekStart !== ws){
+    data.weekStart = ws;
+    (data.weeklyGoals||[]).forEach(g => g.checks = [false,false,false,false,false,false,false]);
+    await saveData();
+  }
+}
+
+async function saveData(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }catch(e){
+    console.error("Storage error", e);
+  }
+}
+
+function el(tag, opts={}, children=[]){
+  const e = document.createElement(tag);
+  if(opts.class) e.className = opts.class;
+  if(opts.text) e.textContent = opts.text;
+  if(opts.html) e.innerHTML = opts.html;
+  if(opts.attrs) Object.entries(opts.attrs).forEach(([k,v])=>e.setAttribute(k,v));
+  children.forEach(c=>e.appendChild(c));
+  return e;
+}
+
+function renderCategorySelect(){
+  const sel = document.getElementById("newItemCategory");
+  sel.innerHTML = "";
+  data.categories.forEach(cat=>{
+    const o = document.createElement("option");
+    o.value = cat; o.textContent = cat;
+    sel.appendChild(o);
+  });
+}
+
+function renderCategoryTags(){
+  const wrap = document.getElementById("categoryTags");
+  wrap.innerHTML = "";
+  data.categories.forEach(cat=>{
+    wrap.appendChild(el("span",{text:cat}));
+  });
+}
+
+function matchesSearch(item){
+  if(!searchTerm) return true;
+  const hay = (item.person+" "+item.need+" "+item.category).toLowerCase();
+  return hay.includes(searchTerm);
+}
+
+function itemRow(item){
+  const today = todayStr();
+  let prayedNow;
+  if(item.frequency === "daily") prayedNow = item.lastPrayed === today;
+  else if(item.frequency === "monthly") prayedNow = item.lastPrayed && item.lastPrayed.slice(0,7) === currentMonthStr();
+  else if(item.frequency === "annual") prayedNow = item.lastPrayed && item.lastPrayed.slice(0,4) === String(new Date().getFullYear());
+  else prayedNow = item.lastPrayed === today; // weekly: mark per day it's prayed
+
+  const row = el("div",{class:"item-row"});
+  const mainLine = el("div",{class:"item-main"});
+  const cb = el("input",{attrs:{type:"checkbox"}});
+  cb.checked = !!prayedNow;
+  cb.addEventListener("change", async ()=>{
+    item.lastPrayed = cb.checked ? today : null;
+    await saveData();
+    renderAll();
+  });
+  const name = el("span",{class:"name"+(prayedNow?" done":"")});
+  name.appendChild(el("span",{class:"person", text:item.person}));
+  if(item.need && item.need.trim()){
+    name.appendChild(el("span",{class:"need", text:item.need}));
+  }
+  const tag = el("span",{class:"tag", text:item.category});
+  mainLine.appendChild(cb); mainLine.appendChild(name); mainLine.appendChild(tag);
+
+  const actions = el("div",{class:"item-actions"});
+  const answerBtn = el("button",{class:"answer-btn", text:"Mark answered"});
+  answerBtn.addEventListener("click", async ()=>{
+    item.answered = true;
+    item.answeredDate = todayStr();
+    await saveData();
+    renderAll();
+  });
+  const del = el("button",{class:"del", text:"Delete"});
+  del.addEventListener("click", async ()=>{
+    data.items = data.items.filter(i=>i.id!==item.id);
+    await saveData();
+    renderAll();
+  });
+  actions.appendChild(answerBtn); actions.appendChild(del);
+
+  row.appendChild(mainLine); row.appendChild(actions);
+  return row;
+}
+
+function answeredRow(item){
+  const wrap = el("div",{class:"answered-row"});
+  wrap.appendChild(el("div",{class:"person", text:item.person}));
+  if(item.need && item.need.trim()) wrap.appendChild(el("div",{class:"need", text:item.need}));
+
+  const meta = el("div",{class:"meta"});
+  const dateLabel = item.answeredDate
+    ? new Date(item.answeredDate+"T00:00:00").toLocaleDateString(undefined,{month:"short", day:"numeric", year:"numeric"})
+    : "";
+  meta.appendChild(el("span",{text:"Answered "+dateLabel}));
+  meta.appendChild(el("span",{class:"tag", text:item.category}));
+  wrap.appendChild(meta);
+
+  const note = el("textarea",{class:"note", attrs:{placeholder:"How did God answer this? (optional)"}});
+  note.value = item.answerNote || "";
+  let noteTimer;
+  note.addEventListener("input", ()=>{
+    item.answerNote = note.value;
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(saveData, 500);
+  });
+  wrap.appendChild(note);
+
+  const actions = el("div",{class:"actions"});
+  const restore = el("button",{class:"restore-btn", text:"Move back to active"});
+  restore.addEventListener("click", async ()=>{
+    item.answered = false;
+    item.answeredDate = null;
+    await saveData();
+    renderAll();
+  });
+  const del = el("button",{class:"del", text:"Delete"});
+  del.addEventListener("click", async ()=>{
+    data.items = data.items.filter(i=>i.id!==item.id);
+    await saveData();
+    renderAll();
+  });
+  actions.appendChild(restore); actions.appendChild(del);
+  wrap.appendChild(actions);
+
+  return wrap;
+}
+
+function renderListsByFrequency(){
+  ["daily","weekly","monthly","annual"].forEach(freq=>{
+    const container = document.getElementById("list-"+freq);
+    container.innerHTML = "";
+    const items = data.items.filter(i=>i.frequency===freq && !i.answered && matchesSearch(i));
+    if(items.length===0){
+      container.appendChild(el("div",{class:"empty", text: searchTerm ? "No matches." : "Nothing here yet."}));
+      return;
+    }
+    items.forEach(item=>container.appendChild(itemRow(item)));
+  });
+}
+
+function renderAnsweredList(){
+  const container = document.getElementById("answeredList");
+  if(!container) return;
+  container.innerHTML = "";
+  const items = data.items
+    .filter(i=>i.answered && matchesSearch(i))
+    .sort((a,b)=> (b.answeredDate||"").localeCompare(a.answeredDate||""));
+  if(items.length===0){
+    container.appendChild(el("div",{class:"empty", text: searchTerm ? "No matches." : "No answered prayers recorded yet."}));
+    return;
+  }
+  items.forEach(item=>container.appendChild(answeredRow(item)));
+}
+
+function renderToday(){
+  const now = new Date();
+  document.getElementById("todayLabel").textContent =
+    now.toLocaleDateString(undefined,{weekday:"long", year:"numeric", month:"long", day:"numeric"});
+
+  // purpose banner
+  const banner = document.getElementById("purposeBanner");
+  if(data.purpose && data.purpose.trim()){
+    banner.style.display = "block";
+    banner.textContent = "\u201C" + data.purpose.trim() + "\u201D";
+  } else {
+    banner.style.display = "none";
+  }
+
+  // daily
+  const dailyWrap = document.getElementById("dailyList");
+  dailyWrap.innerHTML = "";
+  const dailyItems = data.items.filter(i=>i.frequency==="daily" && !i.answered);
+  if(dailyItems.length===0){
+    dailyWrap.appendChild(el("div",{class:"empty", text:"Add daily needs under Prayer Lists."}));
+  } else {
+    dailyItems.forEach(i=>dailyWrap.appendChild(itemRow(i)));
+  }
+
+  // weekly - today's category
+  const dayIdx = now.getDay();
+  const cats = data.categories;
+  const todayCategory = cats.length ? cats[dayIdx % cats.length] : null;
+  document.getElementById("weeklyHeading").textContent = todayCategory ? todayCategory : "Today's category";
+  document.getElementById("weeklySub").textContent = todayCategory
+    ? "Your weekly focus for " + DAY_NAMES[dayIdx] + "day"
+    : "Add categories under Prayer Lists to rotate through the week.";
+  const weeklyWrap = document.getElementById("weeklyList");
+  weeklyWrap.innerHTML = "";
+  const weeklyItems = data.items.filter(i=>i.frequency==="weekly" && i.category===todayCategory && !i.answered);
+  if(weeklyItems.length===0){
+    weeklyWrap.appendChild(el("div",{class:"empty", text:"No weekly items in this category yet."}));
+  } else {
+    weeklyItems.forEach(i=>weeklyWrap.appendChild(itemRow(i)));
+  }
+
+  // today's goal checks
+  const goalsWrap = document.getElementById("todayGoalsList");
+  goalsWrap.innerHTML = "";
+  if(data.weeklyGoals.length===0){
+    goalsWrap.appendChild(el("div",{class:"empty", text:"Add weekly goals under Guidance."}));
+  } else {
+    data.weeklyGoals.forEach(g=>{
+      const row = el("div",{class:"item-row"});
+      const cb = el("input",{attrs:{type:"checkbox"}});
+      cb.checked = !!g.checks[dayIdx];
+      cb.addEventListener("change", async ()=>{
+        g.checks[dayIdx] = cb.checked;
+        await saveData();
+        renderAll();
+      });
+      const name = el("span",{class:"name"+(g.checks[dayIdx]?" done":""), text:g.text});
+      row.appendChild(cb); row.appendChild(name);
+      goalsWrap.appendChild(row);
+    });
+  }
+}
+
+function simpleGoalRow(goal, arrKey){
+  const row = el("div",{class:"item-row"});
+  const cb = el("input",{attrs:{type:"checkbox"}});
+  cb.checked = !!goal.done;
+  cb.addEventListener("change", async ()=>{
+    goal.done = cb.checked;
+    await saveData();
+    renderGuidance();
+  });
+  const name = el("span",{class:"name"+(goal.done?" done":""), text:goal.text});
+  const del = el("button",{class:"del", text:"×"});
+  del.addEventListener("click", async ()=>{
+    data[arrKey] = data[arrKey].filter(g=>g.id!==goal.id);
+    await saveData();
+    renderGuidance();
+  });
+  row.appendChild(cb); row.appendChild(name); row.appendChild(del);
+  return row;
+}
+
+function weeklyGoalRow(goal){
+  const wrap = el("div",{class:"goal-row"});
+  const top = el("div",{class:"goal-top"});
+  const name = el("span",{class:"name", text:goal.text});
+  const del = el("button",{class:"del", text:"×"});
+  del.addEventListener("click", async ()=>{
+    data.weeklyGoals = data.weeklyGoals.filter(g=>g.id!==goal.id);
+    await saveData();
+    renderGuidance();
+    renderToday();
+  });
+  top.appendChild(name); top.appendChild(del);
+  wrap.appendChild(top);
+  const grid = el("div",{class:"week-grid"});
+  DAY_NAMES.forEach((dn, idx)=>{
+    const label = el("label");
+    const cb = el("input",{attrs:{type:"checkbox"}});
+    cb.checked = !!goal.checks[idx];
+    cb.addEventListener("change", async ()=>{
+      goal.checks[idx] = cb.checked;
+      await saveData();
+      renderToday();
+    });
+    label.appendChild(document.createTextNode(dn[0]));
+    label.appendChild(cb);
+    grid.appendChild(label);
+  });
+  wrap.appendChild(grid);
+  return wrap;
+}
+
+function setVerseStatus(msg, isError){
+  const el2 = document.getElementById("verseStatus");
+  el2.textContent = msg || "";
+  el2.classList.toggle("error", !!isError);
+}
+
+function renderMemoryVerse(){
+  const display = document.getElementById("verseDisplay");
+  if(data.memoryVerse && data.memoryVerse.text){
+    display.style.display = "block";
+    document.getElementById("verseText").textContent = data.memoryVerse.text;
+    document.getElementById("verseRef").textContent =
+      data.memoryVerse.reference + (data.memoryVerse.savedDate ? " — ESV, saved " +
+      new Date(data.memoryVerse.savedDate+"T00:00:00").toLocaleDateString(undefined,{month:"short", day:"numeric"}) : "");
+  } else {
+    display.style.display = "none";
+  }
+}
+
+async function lookupVerse(){
+  const book = document.getElementById("verseBook").value.trim();
+  const chapter = document.getElementById("verseChapter").value.trim();
+  const verse = document.getElementById("verseVerse").value.trim();
+  if(!book || !chapter || !verse){
+    setVerseStatus("Enter a book, chapter, and verse.", true);
+    return;
+  }
+  const reference = book + " " + chapter + ":" + verse;
+  setVerseStatus("Looking up " + reference + "...");
+  try{
+    const resp = await fetch("/api/esv?q=" + encodeURIComponent(reference));
+    const json = await resp.json().catch(()=>({}));
+    if(!resp.ok || json.error){
+      throw new Error(json.error || "Lookup failed");
+    }
+    const text = (json.passages && json.passages[0]) ? json.passages[0].trim() : "";
+    if(!text){ throw new Error("No text returned for that reference."); }
+    data.memoryVerse = { reference: json.canonical || reference, text, savedDate: todayStr() };
+    await saveData();
+    renderMemoryVerse();
+    setVerseStatus("Saved as this week's memory verse.");
+  }catch(e){
+    setVerseStatus("Couldn't fetch that automatically — you can paste the text below instead.", true);
+  }
+}
+
+async function saveManualVerse(){
+  const ref = document.getElementById("manualVerseRef").value.trim();
+  const text = document.getElementById("manualVerseText").value.trim();
+  if(!ref || !text){
+    setVerseStatus("Add a reference and the verse text to save it manually.", true);
+    return;
+  }
+  data.memoryVerse = { reference: ref, text, savedDate: todayStr() };
+  await saveData();
+  document.getElementById("manualVerseRef").value = "";
+  document.getElementById("manualVerseText").value = "";
+  renderMemoryVerse();
+  setVerseStatus("Saved as this week's memory verse.");
+}
+
+function renderGuidance(){
+  renderMemoryVerse();
+  document.getElementById("purposeInput").value = data.purpose || "";
+
+  const lifeWrap = document.getElementById("lifeGoalsList");
+  lifeWrap.innerHTML = "";
+  if(data.lifeGoals.length===0) lifeWrap.appendChild(el("div",{class:"empty", text:"No life goals added yet."}));
+  else data.lifeGoals.forEach(g=>lifeWrap.appendChild(simpleGoalRow(g,"lifeGoals")));
+
+  const monthWrap = document.getElementById("monthlyGoalsList");
+  monthWrap.innerHTML = "";
+  if(data.monthlyGoals.length===0) monthWrap.appendChild(el("div",{class:"empty", text:"No monthly goals added yet."}));
+  else data.monthlyGoals.forEach(g=>monthWrap.appendChild(simpleGoalRow(g,"monthlyGoals")));
+
+  const weekWrap = document.getElementById("weeklyGoalsList");
+  weekWrap.innerHTML = "";
+  if(data.weeklyGoals.length===0) weekWrap.appendChild(el("div",{class:"empty", text:"No weekly goals added yet."}));
+  else data.weeklyGoals.forEach(g=>weekWrap.appendChild(weeklyGoalRow(g)));
+}
+
+function renderAll(){
+  renderCategorySelect();
+  renderCategoryTags();
+  renderListsByFrequency();
+  renderAnsweredList();
+  renderToday();
+  renderGuidance();
+}
+
+function setupTabs(){
+  document.querySelectorAll("nav.tabs button").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("panel-"+btn.dataset.tab).classList.add("active");
+    });
+  });
+}
+
+function setupForms(){
+  document.getElementById("lookupVerseBtn").addEventListener("click", lookupVerse);
+
+  document.getElementById("clearVerseBtn").addEventListener("click", async ()=>{
+    data.memoryVerse = null;
+    await saveData();
+    renderMemoryVerse();
+    setVerseStatus("");
+    document.getElementById("verseBook").value = "";
+    document.getElementById("verseChapter").value = "";
+    document.getElementById("verseVerse").value = "";
+  });
+
+  document.getElementById("saveManualVerseBtn").addEventListener("click", saveManualVerse);
+
+  document.getElementById("searchItems").addEventListener("input", (e)=>{
+    searchTerm = e.target.value.trim().toLowerCase();
+    renderListsByFrequency();
+    renderAnsweredList();
+  });
+
+  document.getElementById("addItemBtn").addEventListener("click", async ()=>{
+    const personInput = document.getElementById("newItemPerson");
+    const needInput = document.getElementById("newItemNeed");
+    const person = personInput.value.trim();
+    const need = needInput.value.trim();
+    if(!person) return;
+    const category = document.getElementById("newItemCategory").value;
+    const frequency = document.getElementById("newItemFrequency").value;
+    data.items.push({id: uid(), person, need, category, frequency, lastPrayed: null});
+    personInput.value = "";
+    needInput.value = "";
+    await saveData();
+    renderAll();
+  });
+
+  document.getElementById("addCategoryBtn").addEventListener("click", async ()=>{
+    const input = document.getElementById("newCategoryName");
+    const val = input.value.trim();
+    if(!val || data.categories.includes(val)) return;
+    data.categories.push(val);
+    input.value = "";
+    await saveData();
+    renderAll();
+  });
+
+  let purposeTimer;
+  document.getElementById("purposeInput").addEventListener("input", (e)=>{
+    data.purpose = e.target.value;
+    clearTimeout(purposeTimer);
+    purposeTimer = setTimeout(async ()=>{ await saveData(); renderToday(); }, 500);
+  });
+
+  document.getElementById("addLifeGoalBtn").addEventListener("click", async ()=>{
+    const input = document.getElementById("newLifeGoal");
+    const val = input.value.trim();
+    if(!val) return;
+    data.lifeGoals.push({id:uid(), text:val, done:false});
+    input.value = "";
+    await saveData();
+    renderGuidance();
+  });
+
+  document.getElementById("addMonthlyGoalBtn").addEventListener("click", async ()=>{
+    const input = document.getElementById("newMonthlyGoal");
+    const val = input.value.trim();
+    if(!val) return;
+    data.monthlyGoals.push({id:uid(), text:val, done:false});
+    input.value = "";
+    await saveData();
+    renderGuidance();
+  });
+
+  document.getElementById("addWeeklyGoalBtn").addEventListener("click", async ()=>{
+    const input = document.getElementById("newWeeklyGoal");
+    const val = input.value.trim();
+    if(!val) return;
+    data.weeklyGoals.push({id:uid(), text:val, checks:[false,false,false,false,false,false,false]});
+    input.value = "";
+    await saveData();
+    renderGuidance();
+    renderToday();
+  });
+}
+
+(async function init(){
+  await loadData();
+  setupTabs();
+  setupForms();
+  renderAll();
+})();
+</script>
+</body>
+</html>
