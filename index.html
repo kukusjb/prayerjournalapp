@@ -1,0 +1,2010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Prayer Journal">
+<meta name="theme-color" content="#3F5B4C">
+<title>Personal Prayer Journal</title>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<style>
+  :root{
+    --paper: #F5F1E7;
+    --paper-light: #FBF9F3;
+    --ink: #24302B;
+    --ink-soft: #7A7267;
+    --rule: #E1D9C8;
+    --primary: #3F5B4C;
+    --primary-dark: #33493D;
+    --gold: #B08D4F;
+    --danger: #8B4040;
+  }
+  * { box-sizing: border-box; }
+  .visually-hidden{
+    position:absolute;
+    width:1px; height:1px;
+    padding:0; margin:-1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+    white-space:nowrap;
+    border:0;
+  }
+  html,body{
+    margin:0; padding:0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Avenir Next","Segoe UI","Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ transition: none !important; animation: none !important; }
+  }
+  .serif{
+    font-family: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  }
+  #app{
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display:flex;
+    flex-direction:column;
+    padding-bottom: 40px;
+  }
+  @media (min-width: 640px){
+    #app{ max-width: 720px; }
+    main{ padding: 28px 40px 36px !important; }
+  }
+  header{
+    padding: 18px 20px 6px;
+    text-align:center;
+  }
+  header h1{
+    font-size: 1.35rem;
+    margin:0;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+    font-weight:600;
+  }
+  header .date{
+    margin-top:2px;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+  }
+  nav.tabs{
+    display:flex;
+    padding: 14px 16px 0;
+    gap: 4px;
+    background: var(--paper);
+  }
+  nav.tabs button{
+    flex:1;
+    border:none;
+    cursor:pointer;
+    padding: 10px 6px;
+    font-size: 0.8rem;
+    font-family: inherit;
+    font-weight:600;
+    color: var(--ink-soft);
+    background: var(--rule);
+    border-radius: 999px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  nav.tabs button.active{
+    background: var(--primary);
+    color: #fff;
+  }
+  nav.tabs button:hover:not(.active){
+    background: #D8CDB4;
+  }
+
+  main{
+    background: var(--paper-light);
+    flex:1;
+    padding: 20px 18px 30px;
+    box-shadow: 0 -2px 0 var(--rule) inset;
+  }
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+
+  .today-greeting{
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    margin-bottom: 14px;
+  }
+  .search-wrap{
+    position:relative;
+    display:flex;
+    align-items:center;
+  }
+  .search-wrap .search-icon{
+    position:absolute;
+    left:12px;
+    font-size:0.85rem;
+    opacity:0.5;
+    pointer-events:none;
+  }
+  .search-wrap input{
+    width:100%;
+    font-size:16px;
+    font-family:inherit;
+    padding:11px 36px 11px 34px;
+    border:1px solid var(--rule);
+    border-radius:999px;
+    background:#fff;
+  }
+  .clear-search-btn{
+    position:absolute;
+    right:8px;
+    border:none;
+    background:none;
+    cursor:pointer;
+    color: var(--ink-soft);
+    font-size:1.1rem;
+    line-height:1;
+    padding:4px 6px;
+  }
+  .today-progress{
+    margin-bottom: 14px;
+  }
+  .today-progress .progress-text{
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .today-progress .progress-track{
+    height: 6px;
+    background: var(--rule);
+    border-radius: 999px;
+    overflow:hidden;
+  }
+  .today-progress .progress-fill{
+    height:100%;
+    background: var(--primary);
+    border-radius: 999px;
+    transition: width 0.25s ease;
+  }
+  .purpose-banner{
+    border-left: 3px solid var(--gold);
+    padding: 10px 14px;
+    margin-bottom: 18px;
+    font-family: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    font-style: italic;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+    background: rgba(169,132,62,0.08);
+  }
+  section.block{ margin-bottom: 26px; }
+  section.block h2{
+    font-size: 1.02rem;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+  section.block .sub{
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+  }
+
+  .item-row{
+    display:flex;
+    flex-direction:column;
+    gap: 8px;
+    padding: 14px 14px;
+    margin-bottom: 10px;
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(36,48,43,0.04);
+    transition: box-shadow 0.15s ease;
+  }
+  .item-row:last-child{ margin-bottom: 0; }
+  .item-main{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .item-actions{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    padding-top: 6px;
+    border-top: 1px solid var(--rule);
+  }
+  .item-actions .prayed-label{
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    display:flex;
+    align-items:center;
+    gap:6px;
+    cursor:pointer;
+  }
+  .item-actions .prayed-label.done{
+    color: var(--primary);
+    font-weight:600;
+  }
+  .item-actions .right-actions{
+    display:flex;
+    gap:14px;
+  }
+  .item-row input[type="checkbox"]{
+    width: 19px; height:19px;
+    accent-color: var(--primary);
+    flex-shrink:0;
+  }
+  .item-row .name{
+    flex:1;
+    font-size: 0.95rem;
+    line-height:1.3;
+  }
+  .item-row .name.done{
+    color: var(--ink-soft);
+  }
+  .item-row .name .person{
+    display:block;
+    font-weight: 600;
+  }
+  .item-row .name .need{
+    display:block;
+    font-weight: 400;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+  .item-row .name.done .person,
+  .item-row .name.done .need{
+    color: var(--ink-soft);
+  }
+  .item-row .tag{
+    font-size: 0.68rem;
+    color: var(--ink-soft);
+    background: var(--paper);
+    padding: 3px 8px;
+    border-radius: 10px;
+    white-space:nowrap;
+  }
+  .item-row .del{
+    border:none; background:none; cursor:pointer;
+    color: var(--danger);
+    font-size: 0.78rem;
+    padding: 2px 4px;
+    flex-shrink:0;
+  }
+  .item-row .answer-btn{
+    border:none; background:none; cursor:pointer;
+    color: var(--gold);
+    font-size: 0.75rem;
+    text-decoration: underline;
+    padding: 2px 0;
+  }
+  .answered-row{
+    padding: 14px;
+    margin-bottom: 10px;
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(36,48,43,0.04);
+  }
+  .answered-row:last-child{ margin-bottom:0; }
+  .answered-row .person{ font-weight:600; font-size:0.95rem; }
+  .answered-row .need{ font-size:0.85rem; color: var(--ink-soft); margin-top:2px; }
+  .answered-row .meta{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:6px;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+  }
+  .answered-row .meta .tag{
+    font-size: 0.68rem;
+    background: var(--paper);
+    padding: 2px 7px;
+    border-radius: 10px;
+  }
+  .answered-row .actions{
+    display:flex;
+    gap:14px;
+    margin-top:6px;
+  }
+  .answered-row .restore-btn{
+    border:none; background:none; cursor:pointer;
+    color: var(--primary);
+    font-size: 0.75rem;
+    text-decoration: underline;
+  }
+  .answered-row textarea.note{
+    margin-top:6px;
+    min-height: 44px;
+    font-size: 0.85rem;
+    font-style: normal;
+  }
+  .empty{
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    font-style: italic;
+    padding: 6px 0;
+  }
+
+  .addbar{
+    display:flex;
+    gap:8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .addbar input[type="text"], .addbar input[type="email"], .addbar select, textarea{
+    font-family: inherit;
+    font-size: 16px;
+    padding: 9px 10px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--ink);
+  }
+  .addbar input[type="text"]{ flex: 2 1 140px; }
+  .addbar select{ flex: 1 1 100px; }
+  .addbar button, .addgoal button{
+    border:none;
+    background: var(--primary);
+    color:#fff;
+    padding: 9px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor:pointer;
+    flex: 0 0 auto;
+  }
+  textarea{
+    width:100%;
+    min-height: 70px;
+    resize: vertical;
+    font-family: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    font-style: italic;
+    font-size: 0.92rem;
+  }
+
+  .goal-row{
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .goal-row:last-child{ border-bottom:none; }
+  .goal-top{
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+  }
+  .goal-top .name{ flex:1; font-size:0.9rem; }
+  .week-grid{
+    display:flex;
+    gap:6px;
+    margin-top:8px;
+  }
+  .week-grid label{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    font-size: 0.62rem;
+    color: var(--ink-soft);
+    gap:3px;
+  }
+  .week-grid input[type="checkbox"]{
+    width:18px; height:18px;
+    accent-color: var(--primary);
+  }
+
+  .addgoal{
+    display:flex;
+    gap:8px;
+    margin-top:10px;
+  }
+  .addgoal input{ flex:1; }
+
+  .category-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:8px;
+  }
+  .category-tags span.cat-manage-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size: 0.72rem;
+    background: var(--paper);
+    padding: 4px 6px 4px 9px;
+    border-radius: 12px;
+    color: var(--ink-soft);
+  }
+  .cat-manage-del{
+    border:none;
+    background:none;
+    color: var(--danger);
+    cursor:pointer;
+    font-size:0.85rem;
+    padding: 0 2px;
+    line-height:1;
+  }
+  .footnote{
+    text-align:center;
+    font-size: 0.7rem;
+    color: var(--ink-soft);
+    margin-top: 24px;
+    font-style: italic;
+  }
+  .verse-status{
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    min-height: 1em;
+  }
+  .verse-status.error{ color: var(--danger); }
+  .verse-display{
+    border-left: 3px solid var(--gold);
+    background: rgba(169,132,62,0.08);
+    padding: 12px 14px;
+    margin-top: 10px;
+  }
+  .verse-text{
+    font-family: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    font-style: italic;
+    font-size: 1rem;
+    line-height: 1.55;
+    color: var(--ink);
+    white-space: pre-wrap;
+  }
+  .verse-ref{
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    text-align: right;
+  }
+  .verse-display .answer-btn{ margin-top: 8px; }
+  details.manual-verse{
+    margin-top: 14px;
+    font-size: 0.85rem;
+  }
+  details.manual-verse summary{
+    cursor: pointer;
+    color: var(--primary);
+  }
+  details.manual-verse textarea{
+    width:100%;
+    margin-top: 8px;
+  }
+  #authScreen{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    padding: 20px;
+  }
+  .auth-card{
+    max-width: 380px;
+    width:100%;
+    background: var(--paper-light);
+    border-radius: 8px;
+    padding: 28px 22px;
+    box-shadow: 0 2px 0 var(--rule) inset;
+  }
+  .auth-card h1{
+    font-size: 1.3rem;
+    margin: 0 0 8px;
+    text-align:center;
+  }
+  .auth-card .sub{
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    text-align:center;
+    margin-bottom: 16px;
+  }
+  #sendLinkBtn{ width:100%; }
+  .sign-out-btn{
+    border:none; background:none; cursor:pointer;
+    color: var(--ink-soft);
+    font-size: 0.72rem;
+    text-decoration: underline;
+  }
+  details.contact-details{
+    margin-top: 18px;
+    font-size: 0.85rem;
+    text-align:center;
+  }
+  details.contact-details summary{
+    cursor: pointer;
+    color: var(--primary);
+    text-decoration: underline;
+  }
+  details.contact-details .contact-body{
+    text-align:left;
+    margin-top:10px;
+  }
+  details.contact-details textarea{
+    width:100%;
+    min-height: 80px;
+  }
+
+  /* Button system */
+  .btn-primary{
+    border:none;
+    background: var(--primary);
+    color:#fff;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    font-weight:600;
+    font-family: inherit;
+    cursor:pointer;
+    min-height:44px;
+  }
+  .btn-primary:active{ opacity:0.85; }
+  .btn-secondary{
+    border:1px solid var(--rule);
+    background: #fff;
+    color: var(--ink);
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    font-weight:600;
+    font-family: inherit;
+    cursor:pointer;
+    min-height:44px;
+  }
+  .btn-danger{
+    border:none;
+    background: none;
+    color: var(--danger);
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor:pointer;
+    padding: 10px 4px;
+    text-align:left;
+    width:100%;
+  }
+
+  /* Bottom sheet / modal */
+  .sheet-overlay{
+    position:fixed;
+    inset:0;
+    background: rgba(20,20,15,0.4);
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    z-index: 100;
+  }
+  .sheet{
+    background: var(--paper-light);
+    width:100%;
+    max-width: 520px;
+    border-radius: 18px 18px 0 0;
+    padding: 12px 20px 24px;
+    max-height: 88vh;
+    overflow-y:auto;
+  }
+  @media (min-width: 640px){
+    .sheet-overlay{ align-items:center; }
+    .sheet{ border-radius:16px; }
+  }
+  .sheet-handle{
+    width:40px; height:4px;
+    background: var(--rule);
+    border-radius:2px;
+    margin: 4px auto 14px;
+  }
+  .sheet h2{ margin: 0 0 14px; font-size:1.15rem; }
+  .field-label{
+    display:block;
+    font-size:0.8rem;
+    font-weight:600;
+    color: var(--ink-soft);
+    margin: 12px 0 5px;
+  }
+  .sheet input[type="text"], .sheet select, .sheet textarea{
+    width:100%;
+    font-family: inherit;
+    font-size:16px;
+    padding: 10px 12px;
+    border:1px solid var(--rule);
+    border-radius:8px;
+    background:#fff;
+    color: var(--ink);
+  }
+  .freq-choice{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .freq-choice-btn{
+    flex:1 1 auto;
+    border:1px solid var(--rule);
+    background:#fff;
+    color: var(--ink-soft);
+    padding: 10px 8px;
+    border-radius:8px;
+    font-size:0.85rem;
+    font-family:inherit;
+    cursor:pointer;
+  }
+  .freq-choice-btn.active{
+    background: var(--primary);
+    border-color: var(--primary);
+    color:#fff;
+  }
+  .sheet-actions{
+    display:flex;
+    gap:10px;
+    margin-top:20px;
+  }
+  .sheet-actions .btn-secondary, .sheet-actions .btn-primary{ flex:1; }
+
+  /* Frequency filter tabs on Prayer Lists */
+  .freq-filter{
+    display:flex;
+    gap:6px;
+    overflow-x:auto;
+    padding-bottom:2px;
+  }
+  .freq-chip{
+    flex:0 0 auto;
+    border:1px solid var(--rule);
+    background:#fff;
+    color: var(--ink-soft);
+    padding: 8px 14px;
+    border-radius:20px;
+    font-size:0.82rem;
+    font-family:inherit;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .freq-chip.active{
+    background: var(--primary);
+    border-color: var(--primary);
+    color:#fff;
+  }
+  .freq-count{
+    font-size:0.72rem;
+    opacity:0.8;
+  }
+
+  /* Category filter chips */
+  .category-filter{
+    display:flex;
+    gap:6px;
+    overflow-x:auto;
+    margin-top:10px;
+    padding-bottom:2px;
+  }
+  .category-filter .cat-chip{
+    flex:0 0 auto;
+    border:1px solid var(--rule);
+    background: var(--paper);
+    color: var(--ink-soft);
+    padding: 6px 12px;
+    border-radius:16px;
+    font-size:0.76rem;
+    font-family:inherit;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .category-filter .cat-chip.active{
+    background: var(--gold);
+    border-color: var(--gold);
+    color:#fff;
+  }
+
+  details.manage-categories{
+    margin: 18px 0 0;
+    padding: 0 20px;
+    font-size:0.85rem;
+  }
+  details.manage-categories summary{
+    cursor:pointer;
+    color: var(--primary);
+    text-decoration: underline;
+  }
+
+  /* Item overflow menu */
+  .item-menu{ position:relative; }
+  .item-menu-btn{
+    border:none;
+    background:none;
+    color: var(--ink-soft);
+    font-size:1.1rem;
+    cursor:pointer;
+    padding: 4px 8px;
+    line-height:1;
+  }
+  .item-menu-popover{
+    position:absolute;
+    right:0;
+    top: 100%;
+    margin-top:4px;
+    background:#fff;
+    border:1px solid var(--rule);
+    border-radius:8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+    min-width:160px;
+    z-index: 20;
+    overflow:hidden;
+  }
+  .item-menu-popover button{
+    display:block;
+    width:100%;
+    text-align:left;
+    border:none;
+    background:none;
+    padding: 11px 14px;
+    font-family:inherit;
+    font-size:0.85rem;
+    color: var(--ink);
+    cursor:pointer;
+  }
+  .item-menu-popover button:hover{ background: var(--paper); }
+  .item-menu-popover button.danger{ color: var(--danger); }
+
+  /* Toasts */
+  .toast-container{
+    position:fixed;
+    bottom: 20px;
+    left:50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    align-items:center;
+    width:100%;
+    padding: 0 20px;
+    pointer-events:none;
+  }
+  .toast{
+    background: var(--ink);
+    color:#fff;
+    padding: 11px 18px;
+    border-radius: 20px;
+    font-size:0.85rem;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+    opacity:0;
+    transform: translateY(8px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    max-width: 420px;
+    text-align:center;
+  }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  @media (prefers-reduced-motion: reduce){
+    .toast{ transition:none; }
+  }
+</style>
+</head>
+<body>
+<div id="authScreen">
+  <div class="auth-card">
+    <h1 class="serif">Personal Prayer Journal</h1>
+    <p class="sub">Sign in with your email — we'll send you a link, no password to remember.</p>
+    <div id="authStep1">
+      <div class="addbar">
+        <input type="email" id="authEmail" placeholder="you@example.com" style="flex:1 1 100%;">
+      </div>
+      <div class="addbar" style="margin-top:8px;">
+        <button id="sendLinkBtn">Send sign-in link</button>
+      </div>
+    </div>
+    <div id="authStep2" style="display:none;">
+      <p class="sub">Check your email for a sign-in link. It expires in 15 minutes and works on any device.</p>
+    </div>
+    <div class="verse-status" id="authStatus"></div>
+  </div>
+</div>
+
+<div id="loadingScreen" style="display:none;">
+  <p class="sub" style="text-align:center; padding-top:60px;">Loading your journal...</p>
+</div>
+
+<div id="app" style="display:none;">
+  <header>
+    <h1 class="serif">Personal Prayer Journal</h1>
+    <div class="date" id="todayLabel"></div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="today" class="active">Today</button>
+    <button data-tab="lists">Prayer Lists</button>
+    <button data-tab="guidance">Guidance</button>
+  </nav>
+
+  <main>
+    <!-- TODAY -->
+    <div class="panel active" id="panel-today">
+      <div id="todayGreeting" class="today-greeting"></div>
+      <div id="todayProgress" class="today-progress" style="display:none;"></div>
+      <div id="purposeBanner" style="display:none" class="purpose-banner"></div>
+
+      <section class="block">
+        <h2 class="serif">Daily</h2>
+        <div class="sub">Persons and needs you pray for every day</div>
+        <div id="dailyList"></div>
+      </section>
+
+      <section class="block">
+        <h2 class="serif" id="weeklyHeading">Today's category</h2>
+        <div class="sub" id="weeklySub"></div>
+        <div id="weeklyList"></div>
+      </section>
+
+      <section class="block">
+        <h2 class="serif">This week's goals</h2>
+        <div class="sub">Check off today's column as you complete each one</div>
+        <div id="todayGoalsList"></div>
+      </section>
+    </div>
+
+    <!-- LISTS -->
+    <div class="panel" id="panel-lists">
+      <section class="block">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchItems" placeholder="Search people, requests, or categories">
+          <button id="clearSearchBtn" class="clear-search-btn" style="display:none;" aria-label="Clear search">×</button>
+        </div>
+      </section>
+
+      <section class="block">
+        <button class="btn-primary" id="openAddPrayerBtn" style="width:100%;">+ Add Prayer</button>
+      </section>
+
+      <section class="block">
+        <div class="freq-filter" id="freqFilter" role="tablist" aria-label="Filter by frequency">
+          <button class="freq-chip active" data-freq="daily" role="tab" aria-selected="true">Daily <span class="freq-count" id="count-daily"></span></button>
+          <button class="freq-chip" data-freq="weekly" role="tab" aria-selected="false">Weekly <span class="freq-count" id="count-weekly"></span></button>
+          <button class="freq-chip" data-freq="monthly" role="tab" aria-selected="false">Monthly <span class="freq-count" id="count-monthly"></span></button>
+          <button class="freq-chip" data-freq="annual" role="tab" aria-selected="false">Annual <span class="freq-count" id="count-annual"></span></button>
+        </div>
+        <div class="category-filter" id="categoryFilter"></div>
+        <div class="sub" id="freqSub" style="margin-top:8px;"></div>
+        <div id="filteredList"></div>
+      </section>
+
+      <details class="manage-categories">
+        <summary>Manage categories</summary>
+        <div class="contact-body">
+          <div class="addbar">
+            <input type="text" id="newCategoryName" placeholder="Add a new category">
+            <button id="addCategoryBtn">Add</button>
+          </div>
+          <div class="category-tags" id="categoryTags"></div>
+        </div>
+      </details>
+
+      <section class="block" id="section-answered">
+        <h2 class="serif">Answered prayers</h2>
+        <div class="sub">Prayers you've marked as answered, most recent first</div>
+        <div id="answeredList"></div>
+      </section>
+    </div>
+
+    <!-- GUIDANCE -->
+    <div class="panel" id="panel-guidance">
+      <section class="block">
+        <h2 class="serif">Weekly memory verse</h2>
+        <div class="sub">Look it up from the ESV, or paste it in yourself</div>
+        <div class="addbar">
+          <input type="text" id="verseBook" placeholder="Book (e.g. John)" style="flex:2 1 100px;">
+          <input type="text" id="verseChapter" placeholder="Ch." style="flex:0 0 60px;">
+          <input type="text" id="verseVerse" placeholder="Verse(s)" style="flex:0 0 80px;">
+        </div>
+        <div class="addbar" style="margin-top:8px;">
+          <button id="lookupVerseBtn">Look up ESV text</button>
+        </div>
+        <div class="verse-status" id="verseStatus"></div>
+        <div class="verse-display" id="verseDisplay" style="display:none;">
+          <div class="verse-text" id="verseText"></div>
+          <div class="verse-ref" id="verseRef"></div>
+          <button class="answer-btn" id="clearVerseBtn">Clear and start a new verse</button>
+        </div>
+        <details class="manual-verse">
+          <summary>Paste the text manually instead</summary>
+          <div class="addbar" style="margin-top:8px;">
+            <input type="text" id="manualVerseRef" placeholder="Reference (e.g. Philippians 4:6-7)" style="flex:1 1 100%;">
+          </div>
+          <textarea id="manualVerseText" placeholder="Paste the verse text here"></textarea>
+          <div class="addbar" style="margin-top:8px;">
+            <button id="saveManualVerseBtn">Save verse</button>
+          </div>
+        </details>
+      </section>
+
+      <section class="block">
+        <h2 class="serif">Life purpose</h2>
+        <textarea id="purposeInput" placeholder="Write a short statement of your life purpose..."></textarea>
+      </section>
+
+      <section class="block">
+        <h2 class="serif">Life goals</h2>
+        <div id="lifeGoalsList"></div>
+        <div class="addgoal">
+          <input type="text" id="newLifeGoal" placeholder="Add a life goal">
+          <button id="addLifeGoalBtn">Add</button>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2 class="serif">Monthly goals</h2>
+        <div class="sub">Set these during your extended monthly prayer time</div>
+        <div id="monthlyGoalsList"></div>
+        <div class="addgoal">
+          <input type="text" id="newMonthlyGoal" placeholder="Add a monthly goal">
+          <button id="addMonthlyGoalBtn">Add</button>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2 class="serif">Weekly goals</h2>
+        <div class="sub">Set these during weekly planning; track daily on the chart</div>
+        <div id="weeklyGoalsList"></div>
+        <div class="addgoal">
+          <input type="text" id="newWeeklyGoal" placeholder="Add a weekly goal">
+          <button id="addWeeklyGoalBtn">Add</button>
+        </div>
+      </section>
+    </div>
+  </main>
+  <details class="contact-details">
+    <summary>Contact the developer</summary>
+    <div class="contact-body">
+      <div class="addbar">
+        <input type="text" id="contactName" placeholder="Your name (optional)" style="flex:1 1 100%;">
+      </div>
+      <div class="addbar" style="margin-top:8px;">
+        <input type="email" id="contactEmail" placeholder="Your email, if you'd like a reply (optional)" style="flex:1 1 100%;">
+      </div>
+      <textarea id="contactMessage" placeholder="Questions, bugs, or suggestions..." style="margin-top:8px;"></textarea>
+      <div id="turnstileWidget" style="margin-top:8px;"></div>
+      <div class="addbar" style="margin-top:8px;">
+        <button id="sendContactBtn">Send</button>
+      </div>
+      <div class="verse-status" id="contactStatus"></div>
+    </div>
+  </details>
+  <div style="text-align:center; margin-top:10px;">
+    <button class="sign-out-btn" id="signOutBtn">Sign out</button>
+  </div>
+</div>
+
+<div id="sheetOverlay" class="sheet-overlay" style="display:none;">
+  <div class="sheet" id="addPrayerSheet" role="dialog" aria-modal="true" aria-labelledby="addPrayerTitle">
+    <div class="sheet-handle"></div>
+    <h2 class="serif" id="addPrayerTitle">Add a Prayer</h2>
+    <label class="field-label" for="newItemPerson">Who are you praying for?</label>
+    <input type="text" id="newItemPerson" placeholder="Person or group">
+    <label class="field-label" for="newItemNeed">What would you like to pray about?</label>
+    <textarea id="newItemNeed" placeholder="Prayer request" style="min-height:60px;"></textarea>
+    <label class="field-label" for="newItemCategory">Category</label>
+    <select id="newItemCategory" style="width:100%;"></select>
+    <label class="field-label">How often?</label>
+    <div class="freq-choice" id="newItemFrequencyChoice">
+      <button type="button" class="freq-choice-btn active" data-value="daily">Daily</button>
+      <button type="button" class="freq-choice-btn" data-value="weekly">Weekly</button>
+      <button type="button" class="freq-choice-btn" data-value="monthly">Monthly</button>
+      <button type="button" class="freq-choice-btn" data-value="annual">Annual</button>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-secondary" id="cancelAddPrayerBtn">Cancel</button>
+      <button class="btn-primary" id="addItemBtn">Add Prayer</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirmOverlay" class="sheet-overlay" style="display:none;">
+  <div class="sheet" id="confirmSheet" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="sheet-handle"></div>
+    <h2 class="serif" id="confirmTitle">Confirm</h2>
+    <div id="confirmBody" class="sub" style="margin-bottom:14px;"></div>
+    <div id="confirmExtra"></div>
+    <div class="sheet-actions">
+      <button class="btn-secondary" id="confirmCancelBtn">Cancel</button>
+      <button class="btn-primary" id="confirmOkBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<script>
+const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+let data = null;
+let searchTerm = "";
+// This is your Turnstile SITE key — it's meant to be public, safe to leave in client code.
+// Only the SECRET key (stored on the server as a secret) needs to stay hidden.
+const TURNSTILE_SITE_KEY = "YOUR_TURNSTILE_SITE_KEY";
+let turnstileWidgetId = null;
+
+function todayStr(d = new Date()){
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+function currentMonthStr(d = new Date()){
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+}
+function weekStartStr(d = new Date()){
+  const day = d.getDay();
+  const sun = new Date(d);
+  sun.setDate(d.getDate()-day);
+  return todayStr(sun);
+}
+function uid(){ return Math.random().toString(36).slice(2,10); }
+
+function defaultData(){
+  return {
+    categories: ["Family members","Relatives","Close friends","Business associates",
+      "Persons in authority","Missionaries","Church leaders","Disciples","Countries"],
+    items: [],
+    purpose: "",
+    lifeGoals: [],
+    monthlyGoals: [],
+    weeklyGoals: [
+      {id: uid(), text: "Read and mark my Bible ten minutes a day", checks: [false,false,false,false,false,false,false]},
+      {id: uid(), text: "Memorize a new verse each week", checks: [false,false,false,false,false,false,false]},
+      {id: uid(), text: "Have individual Bible study one hour each week", checks: [false,false,false,false,false,false,false]}
+    ],
+    weekStart: weekStartStr(),
+    memoryVerse: null
+  };
+}
+
+const SESSION_KEY = "sessionToken";
+
+function getSessionToken(){
+  try{ return localStorage.getItem(SESSION_KEY); }catch(e){ return null; }
+}
+function setSessionToken(token){
+  try{ localStorage.setItem(SESSION_KEY, token); }catch(e){}
+}
+function clearSessionToken(){
+  try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
+}
+
+async function loadData(){
+  const token = getSessionToken();
+  const resp = await fetch("/api/journal", {
+    headers: { "Authorization": "Bearer " + token }
+  });
+  if(resp.status === 401){
+    clearSessionToken();
+    return false;
+  }
+  const json = await resp.json().catch(()=>({}));
+  try{
+    data = json.data ? JSON.parse(json.data) : defaultData();
+  }catch(e){
+    data = defaultData();
+  }
+  // migrate older entries that only had a single "name" field
+  (data.items||[]).forEach(item=>{
+    if(item.person === undefined){
+      item.person = item.name || "";
+      item.need = "";
+      delete item.name;
+    }
+    if(item.answered === undefined) item.answered = false;
+    if(item.answeredDate === undefined) item.answeredDate = null;
+    if(item.answerNote === undefined) item.answerNote = "";
+  });
+  if(data.memoryVerse === undefined) data.memoryVerse = null;
+  // weekly reset
+  const ws = weekStartStr();
+  if(data.weekStart !== ws){
+    data.weekStart = ws;
+    (data.weeklyGoals||[]).forEach(g => g.checks = [false,false,false,false,false,false,false]);
+    await saveData();
+  }
+  return true;
+}
+
+async function saveData(){
+  const token = getSessionToken();
+  try{
+    await fetch("/api/journal", {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ data: JSON.stringify(data) })
+    });
+  }catch(e){
+    console.error("Save error", e);
+  }
+}
+
+function el(tag, opts={}, children=[]){
+  const e = document.createElement(tag);
+  if(opts.class) e.className = opts.class;
+  if(opts.text) e.textContent = opts.text;
+  if(opts.html) e.innerHTML = opts.html;
+  if(opts.attrs) Object.entries(opts.attrs).forEach(([k,v])=>e.setAttribute(k,v));
+  children.forEach(c=>e.appendChild(c));
+  return e;
+}
+
+function showToast(message){
+  const container = document.getElementById("toastContainer");
+  if(!container) return;
+  const toast = el("div",{class:"toast", text:message});
+  container.appendChild(toast);
+  requestAnimationFrame(()=> toast.classList.add("show"));
+  setTimeout(()=>{
+    toast.classList.remove("show");
+    setTimeout(()=> toast.remove(), 250);
+  }, 2200);
+}
+
+function closeAllItemMenus(){
+  document.querySelectorAll(".item-menu-popover").forEach(p=>p.remove());
+}
+document.addEventListener("click", closeAllItemMenus);
+
+function openConfirm({title, body, confirmText, danger, onConfirm, extraNode}){
+  document.getElementById("confirmTitle").textContent = title || "Confirm";
+  document.getElementById("confirmBody").textContent = body || "";
+  const okBtn = document.getElementById("confirmOkBtn");
+  okBtn.textContent = confirmText || "Confirm";
+  okBtn.style.background = danger ? "var(--danger)" : "";
+  const extra = document.getElementById("confirmExtra");
+  extra.innerHTML = "";
+  if(extraNode) extra.appendChild(extraNode);
+  const overlay = document.getElementById("confirmOverlay");
+  overlay.style.display = "flex";
+  okBtn.onclick = async ()=>{
+    overlay.style.display = "none";
+    await onConfirm();
+  };
+  document.getElementById("confirmCancelBtn").onclick = ()=>{
+    overlay.style.display = "none";
+  };
+}
+
+function openMarkAnsweredDialog(item){
+  const noteWrap = document.createElement("div");
+  noteWrap.appendChild(el("label",{class:"field-label", text:"How was this prayer answered? (optional)"}));
+  const noteInput = el("textarea",{attrs:{placeholder:"Optional note"}});
+  noteWrap.appendChild(noteInput);
+  openConfirm({
+    title: "Mark as answered",
+    body: item.person + (item.need && item.need.trim() ? " — " + item.need : ""),
+    confirmText: "Mark Answered",
+    extraNode: noteWrap,
+    onConfirm: async ()=>{
+      item.answered = true;
+      item.answeredDate = todayStr();
+      item.answerNote = noteInput.value.trim();
+      await saveData();
+      renderAll();
+      showToast("Moved to Answered Prayers");
+    }
+  });
+}
+
+function renderCategorySelect(){
+  const sel = document.getElementById("newItemCategory");
+  sel.innerHTML = "";
+  data.categories.forEach(cat=>{
+    const o = document.createElement("option");
+    o.value = cat; o.textContent = cat;
+    sel.appendChild(o);
+  });
+}
+
+function renderCategoryTags(){
+  const wrap = document.getElementById("categoryTags");
+  wrap.innerHTML = "";
+  data.categories.forEach(cat=>{
+    const pill = el("span",{class:"cat-manage-pill"});
+    pill.appendChild(document.createTextNode(cat));
+    const delBtn = el("button",{class:"cat-manage-del", text:"×", attrs:{type:"button","aria-label":"Delete category "+cat}});
+    delBtn.addEventListener("click", ()=>{
+      const usedCount = data.items.filter(i=>i.category===cat).length;
+      openConfirm({
+        title: "Delete \"" + cat + "\"?",
+        body: usedCount > 0
+          ? usedCount + " prayer" + (usedCount===1?"":"s") + " currently use this category. They'll be moved to \"Uncategorized\"."
+          : "This category isn't used by any prayers yet.",
+        confirmText: "Delete category",
+        danger: true,
+        onConfirm: async ()=>{
+          data.categories = data.categories.filter(c=>c!==cat);
+          if(usedCount > 0){
+            if(!data.categories.includes("Uncategorized")) data.categories.push("Uncategorized");
+            data.items.forEach(i=>{ if(i.category===cat) i.category = "Uncategorized"; });
+          }
+          await saveData();
+          renderAll();
+          showToast("Category deleted");
+        }
+      });
+    });
+    pill.appendChild(delBtn);
+    wrap.appendChild(pill);
+  });
+}
+
+function matchesSearch(item){
+  if(!searchTerm) return true;
+  const hay = (item.person+" "+item.need+" "+item.category).toLowerCase();
+  return hay.includes(searchTerm);
+}
+
+function itemRow(item){
+  const today = todayStr();
+  let prayedNow;
+  if(item.frequency === "daily") prayedNow = item.lastPrayed === today;
+  else if(item.frequency === "monthly") prayedNow = item.lastPrayed && item.lastPrayed.slice(0,7) === currentMonthStr();
+  else if(item.frequency === "annual") prayedNow = item.lastPrayed && item.lastPrayed.slice(0,4) === String(new Date().getFullYear());
+  else prayedNow = item.lastPrayed === today; // weekly: mark per day it's prayed
+
+  const row = el("div",{class:"item-row"});
+  const mainLine = el("div",{class:"item-main"});
+  const name = el("span",{class:"name"+(prayedNow?" done":"")});
+  name.appendChild(el("span",{class:"person", text:item.person}));
+  if(item.need && item.need.trim()){
+    name.appendChild(el("span",{class:"need", text:item.need}));
+  }
+  const tag = el("span",{class:"tag", text:item.category});
+  mainLine.appendChild(name); mainLine.appendChild(tag);
+
+  const actions = el("div",{class:"item-actions"});
+
+  const prayedLabel = el("label",{class:"prayed-label"+(prayedNow?" done":"")});
+  const cb = el("input",{class:"visually-hidden", attrs:{type:"checkbox"}});
+  cb.checked = !!prayedNow;
+  cb.addEventListener("change", async ()=>{
+    item.lastPrayed = cb.checked ? today : null;
+    await saveData();
+    renderAll();
+  });
+  prayedLabel.appendChild(cb);
+  prayedLabel.appendChild(document.createTextNode((prayedNow ? "✓" : "○") + " Prayed today"));
+
+  const menuWrap = el("div",{class:"item-menu"});
+  const menuBtn = el("button",{class:"item-menu-btn", text:"⋯", attrs:{type:"button","aria-label":"More actions for "+item.person, "aria-haspopup":"true"}});
+  menuBtn.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    const alreadyOpen = !!menuWrap.querySelector(".item-menu-popover");
+    closeAllItemMenus();
+    if(alreadyOpen) return; // second click toggles it closed
+    const popover = el("div",{class:"item-menu-popover"});
+    const answerOpt = el("button",{attrs:{type:"button"}, text:"Mark as answered"});
+    answerOpt.addEventListener("click", (e2)=>{
+      e2.stopPropagation();
+      closeAllItemMenus();
+      openMarkAnsweredDialog(item);
+    });
+    const deleteOpt = el("button",{class:"danger", attrs:{type:"button"}, text:"Delete"});
+    deleteOpt.addEventListener("click", (e2)=>{
+      e2.stopPropagation();
+      closeAllItemMenus();
+      openConfirm({
+        title: "Delete this prayer?",
+        body: "This will permanently remove the prayer for " + item.person + ".",
+        confirmText: "Delete",
+        danger: true,
+        onConfirm: async ()=>{
+          data.items = data.items.filter(i=>i.id!==item.id);
+          await saveData();
+          renderAll();
+          showToast("Prayer deleted");
+        }
+      });
+    });
+    popover.appendChild(answerOpt); popover.appendChild(deleteOpt);
+    menuWrap.appendChild(popover);
+  });
+  menuWrap.appendChild(menuBtn);
+
+  actions.appendChild(prayedLabel); actions.appendChild(menuWrap);
+
+  row.appendChild(mainLine); row.appendChild(actions);
+  return row;
+}
+
+function answeredRow(item){
+  const wrap = el("div",{class:"answered-row"});
+  wrap.appendChild(el("div",{class:"person", text:item.person}));
+  if(item.need && item.need.trim()) wrap.appendChild(el("div",{class:"need", text:item.need}));
+
+  const meta = el("div",{class:"meta"});
+  const dateLabel = item.answeredDate
+    ? new Date(item.answeredDate+"T00:00:00").toLocaleDateString(undefined,{month:"short", day:"numeric", year:"numeric"})
+    : "";
+  meta.appendChild(el("span",{text:"Answered "+dateLabel}));
+  meta.appendChild(el("span",{class:"tag", text:item.category}));
+  wrap.appendChild(meta);
+
+  const note = el("textarea",{class:"note", attrs:{placeholder:"How did God answer this? (optional)"}});
+  note.value = item.answerNote || "";
+  let noteTimer;
+  note.addEventListener("input", ()=>{
+    item.answerNote = note.value;
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(saveData, 500);
+  });
+  wrap.appendChild(note);
+
+  const actions = el("div",{class:"actions"});
+  const restore = el("button",{class:"restore-btn", text:"Move back to active"});
+  restore.addEventListener("click", async ()=>{
+    item.answered = false;
+    item.answeredDate = null;
+    await saveData();
+    renderAll();
+    showToast("Moved back to active");
+  });
+  const del = el("button",{class:"del", text:"Delete"});
+  del.addEventListener("click", ()=>{
+    openConfirm({
+      title: "Delete this record?",
+      body: "This will permanently remove the answered prayer for " + item.person + ".",
+      confirmText: "Delete",
+      danger: true,
+      onConfirm: async ()=>{
+        data.items = data.items.filter(i=>i.id!==item.id);
+        await saveData();
+        renderAll();
+        showToast("Deleted");
+      }
+    });
+  });
+  actions.appendChild(restore); actions.appendChild(del);
+  wrap.appendChild(actions);
+
+  return wrap;
+}
+
+let activeFreqFilter = "daily";
+let activeCategoryFilter = "all";
+
+function renderListsByFrequency(){
+  const freqLabels = {
+    daily: "Add someone you want to remember every day.",
+    weekly: "Add someone you'd like to pray for on a rotating weekly basis.",
+    monthly: "Useful for people or needs you want to revisit once a month.",
+    annual: "For events or people you pray for once a year."
+  };
+
+  // Update chip counts and active state
+  ["daily","weekly","monthly","annual"].forEach(freq=>{
+    const count = data.items.filter(i=>i.frequency===freq && !i.answered).length;
+    const countEl = document.getElementById("count-"+freq);
+    if(countEl) countEl.textContent = count > 0 ? count : "";
+    const chip = document.querySelector('.freq-chip[data-freq="'+freq+'"]');
+    if(chip){
+      const isActive = freq === activeFreqFilter;
+      chip.classList.toggle("active", isActive);
+      chip.setAttribute("aria-selected", isActive ? "true" : "false");
+    }
+  });
+
+  // Category filter chips
+  const catWrap = document.getElementById("categoryFilter");
+  catWrap.innerHTML = "";
+  const allChip = el("button",{class:"cat-chip"+(activeCategoryFilter==="all"?" active":""), text:"All"});
+  allChip.addEventListener("click", ()=>{ activeCategoryFilter = "all"; renderListsByFrequency(); });
+  catWrap.appendChild(allChip);
+  data.categories.forEach(cat=>{
+    const chip = el("button",{class:"cat-chip"+(activeCategoryFilter===cat?" active":""), text:cat});
+    chip.addEventListener("click", ()=>{ activeCategoryFilter = cat; renderListsByFrequency(); });
+    catWrap.appendChild(chip);
+  });
+
+  const subEl = document.getElementById("freqSub");
+  subEl.textContent = activeFreqFilter === "weekly"
+    ? "Categories rotate through the week — see the Today tab."
+    : "";
+
+  const container = document.getElementById("filteredList");
+  container.innerHTML = "";
+  const totalForFreq = data.items.filter(i=>i.frequency===activeFreqFilter && !i.answered).length;
+  let items = data.items.filter(i=>i.frequency===activeFreqFilter && !i.answered && matchesSearch(i));
+  if(activeCategoryFilter !== "all"){
+    items = items.filter(i=>i.category===activeCategoryFilter);
+  }
+
+  if(totalForFreq === 0 && !searchTerm){
+    container.appendChild(el("div",{class:"empty", text: freqLabels[activeFreqFilter]}));
+    return;
+  }
+  if(items.length===0){
+    container.appendChild(el("div",{class:"empty", text: searchTerm ? "No matches." : "No prayers in this category yet."}));
+    return;
+  }
+  items.forEach(item=>container.appendChild(itemRow(item)));
+}
+
+function renderAnsweredList(){
+  const container = document.getElementById("answeredList");
+  const section = document.getElementById("section-answered");
+  if(!container) return;
+  container.innerHTML = "";
+  const totalAnswered = data.items.filter(i=>i.answered).length;
+  const items = data.items
+    .filter(i=>i.answered && matchesSearch(i))
+    .sort((a,b)=> (b.answeredDate||"").localeCompare(a.answeredDate||""));
+
+  if(totalAnswered === 0 && !searchTerm){
+    if(section) section.style.display = "none";
+    return;
+  }
+  if(section) section.style.display = "block";
+
+  if(items.length===0){
+    container.appendChild(el("div",{class:"empty", text: searchTerm ? "No matches." : "No answered prayers recorded yet."}));
+    return;
+  }
+  items.forEach(item=>container.appendChild(answeredRow(item)));
+}
+
+function renderToday(){
+  const now = new Date();
+  document.getElementById("todayLabel").textContent =
+    now.toLocaleDateString(undefined,{weekday:"long", year:"numeric", month:"long", day:"numeric"});
+
+  const hour = now.getHours();
+  const greeting = hour < 12 ? "Good morning" : (hour < 18 ? "Good afternoon" : "Good evening");
+  document.getElementById("todayGreeting").textContent = greeting + " — here's who's on your heart today.";
+
+  // purpose banner
+  const banner = document.getElementById("purposeBanner");
+  if(data.purpose && data.purpose.trim()){
+    banner.style.display = "block";
+    banner.textContent = "\u201C" + data.purpose.trim() + "\u201D";
+  } else {
+    banner.style.display = "none";
+  }
+
+  // daily
+  const dailyWrap = document.getElementById("dailyList");
+  dailyWrap.innerHTML = "";
+  const dailyItems = data.items.filter(i=>i.frequency==="daily" && !i.answered);
+  if(dailyItems.length===0){
+    dailyWrap.appendChild(el("div",{class:"empty", text:"Add daily needs under Prayer Lists to see them here."}));
+  } else {
+    dailyItems.forEach(i=>dailyWrap.appendChild(itemRow(i)));
+  }
+
+  // weekly - today's category
+  const dayIdx = now.getDay();
+  const cats = data.categories;
+  const todayCategory = cats.length ? cats[dayIdx % cats.length] : null;
+  document.getElementById("weeklyHeading").textContent = todayCategory ? todayCategory : "Today's category";
+  document.getElementById("weeklySub").textContent = todayCategory
+    ? "Your weekly focus for " + DAY_NAMES[dayIdx] + "day"
+    : "Add categories under Prayer Lists to rotate through the week.";
+  const weeklyWrap = document.getElementById("weeklyList");
+  weeklyWrap.innerHTML = "";
+  const weeklyItems = data.items.filter(i=>i.frequency==="weekly" && i.category===todayCategory && !i.answered);
+  if(weeklyItems.length===0){
+    weeklyWrap.appendChild(el("div",{class:"empty", text:"Nothing in this category yet — add someone under Prayer Lists."}));
+  } else {
+    weeklyItems.forEach(i=>weeklyWrap.appendChild(itemRow(i)));
+  }
+
+  // today's prayer progress (daily + today's weekly focus combined)
+  const todaysPrayerItems = dailyItems.concat(weeklyItems);
+  const progressEl = document.getElementById("todayProgress");
+  if(todaysPrayerItems.length === 0){
+    progressEl.style.display = "none";
+  } else {
+    const todayStrVal = todayStr();
+    const prayedCount = todaysPrayerItems.filter(i => i.lastPrayed === todayStrVal).length;
+    progressEl.style.display = "block";
+    progressEl.innerHTML = "";
+    const pct = Math.round((prayedCount / todaysPrayerItems.length) * 100);
+    const text = el("div",{class:"progress-text", text: prayedCount + " of " + todaysPrayerItems.length + " prayed for today"});
+    const track = el("div",{class:"progress-track"});
+    const fill = el("div",{class:"progress-fill"});
+    fill.style.width = pct + "%";
+    track.appendChild(fill);
+    progressEl.appendChild(text);
+    progressEl.appendChild(track);
+  }
+
+  // today's goal checks
+  const goalsWrap = document.getElementById("todayGoalsList");
+  goalsWrap.innerHTML = "";
+  if(data.weeklyGoals.length===0){
+    goalsWrap.appendChild(el("div",{class:"empty", text:"Add weekly goals under Guidance."}));
+  } else {
+    data.weeklyGoals.forEach(g=>{
+      const row = el("div",{class:"item-row"});
+      const cb = el("input",{attrs:{type:"checkbox"}});
+      cb.checked = !!g.checks[dayIdx];
+      cb.addEventListener("change", async ()=>{
+        g.checks[dayIdx] = cb.checked;
+        await saveData();
+        renderAll();
+      });
+      const name = el("span",{class:"name"+(g.checks[dayIdx]?" done":""), text:g.text});
+      row.appendChild(cb); row.appendChild(name);
+      goalsWrap.appendChild(row);
+    });
+  }
+}
+
+function simpleGoalRow(goal, arrKey){
+  const row = el("div",{class:"item-row"});
+  const cb = el("input",{attrs:{type:"checkbox"}});
+  cb.checked = !!goal.done;
+  cb.addEventListener("change", async ()=>{
+    goal.done = cb.checked;
+    await saveData();
+    renderGuidance();
+  });
+  const name = el("span",{class:"name"+(goal.done?" done":""), text:goal.text});
+  const del = el("button",{class:"del", text:"×"});
+  del.addEventListener("click", async ()=>{
+    data[arrKey] = data[arrKey].filter(g=>g.id!==goal.id);
+    await saveData();
+    renderGuidance();
+  });
+  row.appendChild(cb); row.appendChild(name); row.appendChild(del);
+  return row;
+}
+
+function weeklyGoalRow(goal){
+  const wrap = el("div",{class:"goal-row"});
+  const top = el("div",{class:"goal-top"});
+  const name = el("span",{class:"name", text:goal.text});
+  const del = el("button",{class:"del", text:"×"});
+  del.addEventListener("click", async ()=>{
+    data.weeklyGoals = data.weeklyGoals.filter(g=>g.id!==goal.id);
+    await saveData();
+    renderGuidance();
+    renderToday();
+  });
+  top.appendChild(name); top.appendChild(del);
+  wrap.appendChild(top);
+  const grid = el("div",{class:"week-grid"});
+  DAY_NAMES.forEach((dn, idx)=>{
+    const label = el("label");
+    const cb = el("input",{attrs:{type:"checkbox"}});
+    cb.checked = !!goal.checks[idx];
+    cb.addEventListener("change", async ()=>{
+      goal.checks[idx] = cb.checked;
+      await saveData();
+      renderToday();
+    });
+    label.appendChild(document.createTextNode(dn[0]));
+    label.appendChild(cb);
+    grid.appendChild(label);
+  });
+  wrap.appendChild(grid);
+  return wrap;
+}
+
+function setVerseStatus(msg, isError){
+  const el2 = document.getElementById("verseStatus");
+  el2.textContent = msg || "";
+  el2.classList.toggle("error", !!isError);
+}
+
+function renderMemoryVerse(){
+  const display = document.getElementById("verseDisplay");
+  if(data.memoryVerse && data.memoryVerse.text){
+    display.style.display = "block";
+    document.getElementById("verseText").textContent = data.memoryVerse.text;
+    document.getElementById("verseRef").textContent =
+      data.memoryVerse.reference + (data.memoryVerse.savedDate ? " — ESV, saved " +
+      new Date(data.memoryVerse.savedDate+"T00:00:00").toLocaleDateString(undefined,{month:"short", day:"numeric"}) : "");
+  } else {
+    display.style.display = "none";
+  }
+}
+
+async function lookupVerse(){
+  const book = document.getElementById("verseBook").value.trim();
+  const chapter = document.getElementById("verseChapter").value.trim();
+  const verse = document.getElementById("verseVerse").value.trim();
+  if(!book || !chapter || !verse){
+    setVerseStatus("Enter a book, chapter, and verse.", true);
+    return;
+  }
+  const reference = book + " " + chapter + ":" + verse;
+  setVerseStatus("Looking up " + reference + "...");
+  try{
+    const resp = await fetch("/api/esv?q=" + encodeURIComponent(reference));
+    const json = await resp.json().catch(()=>({}));
+    if(!resp.ok || json.error){
+      throw new Error(json.error || "Lookup failed");
+    }
+    const text = (json.passages && json.passages[0]) ? json.passages[0].trim() : "";
+    if(!text){ throw new Error("No text returned for that reference."); }
+    data.memoryVerse = { reference: json.canonical || reference, text, savedDate: todayStr() };
+    await saveData();
+    renderMemoryVerse();
+    setVerseStatus("Saved as this week's memory verse.");
+  }catch(e){
+    setVerseStatus("Couldn't fetch that automatically — you can paste the text below instead.", true);
+  }
+}
+
+async function saveManualVerse(){
+  const ref = document.getElementById("manualVerseRef").value.trim();
+  const text = document.getElementById("manualVerseText").value.trim();
+  if(!ref || !text){
+    setVerseStatus("Add a reference and the verse text to save it manually.", true);
+    return;
+  }
+  data.memoryVerse = { reference: ref, text, savedDate: todayStr() };
+  await saveData();
+  document.getElementById("manualVerseRef").value = "";
+  document.getElementById("manualVerseText").value = "";
+  renderMemoryVerse();
+  setVerseStatus("Saved as this week's memory verse.");
+}
+
+function renderGuidance(){
+  renderMemoryVerse();
+  document.getElementById("purposeInput").value = data.purpose || "";
+
+  const lifeWrap = document.getElementById("lifeGoalsList");
+  lifeWrap.innerHTML = "";
+  if(data.lifeGoals.length===0) lifeWrap.appendChild(el("div",{class:"empty", text:"No life goals added yet."}));
+  else data.lifeGoals.forEach(g=>lifeWrap.appendChild(simpleGoalRow(g,"lifeGoals")));
+
+  const monthWrap = document.getElementById("monthlyGoalsList");
+  monthWrap.innerHTML = "";
+  if(data.monthlyGoals.length===0) monthWrap.appendChild(el("div",{class:"empty", text:"No monthly goals added yet."}));
+  else data.monthlyGoals.forEach(g=>monthWrap.appendChild(simpleGoalRow(g,"monthlyGoals")));
+
+  const weekWrap = document.getElementById("weeklyGoalsList");
+  weekWrap.innerHTML = "";
+  if(data.weeklyGoals.length===0) weekWrap.appendChild(el("div",{class:"empty", text:"No weekly goals added yet."}));
+  else data.weeklyGoals.forEach(g=>weekWrap.appendChild(weeklyGoalRow(g)));
+}
+
+function renderAll(){
+  renderCategorySelect();
+  renderCategoryTags();
+  renderListsByFrequency();
+  renderAnsweredList();
+  renderToday();
+  renderGuidance();
+}
+
+function setupTabs(){
+  document.querySelectorAll("nav.tabs button").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("panel-"+btn.dataset.tab).classList.add("active");
+    });
+  });
+}
+
+function setupForms(){
+  document.getElementById("sendContactBtn").addEventListener("click", async ()=>{
+    const nameEl = document.getElementById("contactName");
+    const emailEl = document.getElementById("contactEmail");
+    const messageEl = document.getElementById("contactMessage");
+    const statusEl = document.getElementById("contactStatus");
+    const message = messageEl.value.trim();
+    if(!message){
+      statusEl.textContent = "Enter a message before sending.";
+      statusEl.classList.add("error");
+      return;
+    }
+    const turnstileToken = (typeof turnstile !== "undefined" && turnstileWidgetId !== null)
+      ? turnstile.getResponse(turnstileWidgetId) : "";
+    if(!turnstileToken){
+      statusEl.textContent = "Please complete the verification check.";
+      statusEl.classList.add("error");
+      return;
+    }
+    statusEl.textContent = "Sending...";
+    statusEl.classList.remove("error");
+    try{
+      const resp = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: nameEl.value.trim(),
+          email: emailEl.value.trim(),
+          message,
+          turnstileToken
+        })
+      });
+      const json = await resp.json().catch(()=>({}));
+      if(!resp.ok || json.error){
+        throw new Error(json.error || "Could not send your message.");
+      }
+      statusEl.textContent = "Thanks! Your message was sent.";
+      nameEl.value = ""; emailEl.value = ""; messageEl.value = "";
+    }catch(e){
+      statusEl.textContent = e.message || "Something went wrong. Try again.";
+      statusEl.classList.add("error");
+    }finally{
+      if(typeof turnstile !== "undefined" && turnstileWidgetId !== null){
+        turnstile.reset(turnstileWidgetId);
+      }
+    }
+  });
+
+  document.getElementById("lookupVerseBtn").addEventListener("click", lookupVerse);
+
+  document.getElementById("clearVerseBtn").addEventListener("click", async ()=>{
+    data.memoryVerse = null;
+    await saveData();
+    renderMemoryVerse();
+    setVerseStatus("");
+    document.getElementById("verseBook").value = "";
+    document.getElementById("verseChapter").value = "";
+    document.getElementById("verseVerse").value = "";
+  });
+
+  document.getElementById("saveManualVerseBtn").addEventListener("click", saveManualVerse);
+
+  document.getElementById("searchItems").addEventListener("input", (e)=>{
+    searchTerm = e.target.value.trim().toLowerCase();
+    document.getElementById("clearSearchBtn").style.display = e.target.value ? "block" : "none";
+    renderListsByFrequency();
+    renderAnsweredList();
+  });
+
+  document.getElementById("clearSearchBtn").addEventListener("click", ()=>{
+    const input = document.getElementById("searchItems");
+    input.value = "";
+    searchTerm = "";
+    document.getElementById("clearSearchBtn").style.display = "none";
+    renderListsByFrequency();
+    renderAnsweredList();
+    input.focus();
+  });
+
+  // --- Add Prayer bottom sheet ---
+  let selectedNewItemFrequency = "daily";
+
+  function openAddPrayerSheet(){
+    document.getElementById("sheetOverlay").style.display = "flex";
+    document.getElementById("newItemPerson").focus();
+  }
+  function closeAddPrayerSheet(){
+    document.getElementById("sheetOverlay").style.display = "none";
+    document.getElementById("newItemPerson").value = "";
+    document.getElementById("newItemNeed").value = "";
+    selectedNewItemFrequency = "daily";
+    document.querySelectorAll("#newItemFrequencyChoice .freq-choice-btn").forEach(b=>{
+      b.classList.toggle("active", b.dataset.value === "daily");
+    });
+  }
+
+  document.getElementById("openAddPrayerBtn").addEventListener("click", openAddPrayerSheet);
+  document.getElementById("cancelAddPrayerBtn").addEventListener("click", closeAddPrayerSheet);
+  document.getElementById("sheetOverlay").addEventListener("click", (e)=>{
+    if(e.target.id === "sheetOverlay") closeAddPrayerSheet();
+  });
+
+  document.getElementById("newItemFrequencyChoice").addEventListener("click", (e)=>{
+    const btn = e.target.closest(".freq-choice-btn");
+    if(!btn) return;
+    selectedNewItemFrequency = btn.dataset.value;
+    document.querySelectorAll("#newItemFrequencyChoice .freq-choice-btn").forEach(b=>{
+      b.classList.toggle("active", b === btn);
+    });
+  });
+
+  document.getElementById("addItemBtn").addEventListener("click", async ()=>{
+    const personInput = document.getElementById("newItemPerson");
+    const needInput = document.getElementById("newItemNeed");
+    const person = personInput.value.trim();
+    const need = needInput.value.trim();
+    if(!person){
+      personInput.focus();
+      return;
+    }
+    const category = document.getElementById("newItemCategory").value;
+    data.items.push({id: uid(), person, need, category, frequency: selectedNewItemFrequency, lastPrayed: null});
+    await saveData();
+    closeAddPrayerSheet();
+    activeFreqFilter = selectedNewItemFrequency;
+    renderAll();
+    showToast("Prayer added");
+  });
+
+  document.getElementById("freqFilter").addEventListener("click", (e)=>{
+    const btn = e.target.closest(".freq-chip");
+    if(!btn) return;
+    activeFreqFilter = btn.dataset.freq;
+    activeCategoryFilter = "all";
+    renderListsByFrequency();
+  });
+
+  document.getElementById("confirmOverlay").addEventListener("click", (e)=>{
+    if(e.target.id === "confirmOverlay") e.target.style.display = "none";
+  });
+
+  document.getElementById("addCategoryBtn").addEventListener("click", async ()=>{
+    const input = document.getElementById("newCategoryName");
+    const val = input.value.trim();
+    if(!val || data.categories.includes(val)) return;
+    data.categories.push(val);
+    input.value = "";
+    await saveData();
+    renderAll();
+    showToast("Category added");
+  });
+
+  let purposeTimer;
+  document.getElementById("purposeInput").addEventListener("input", (e)=>{
+    data.purpose = e.target.value;
+    clearTimeout(purposeTimer);
+    purposeTimer = setTimeout(async ()=>{ await saveData(); renderToday(); }, 500);
+  });
+
+  document.getElementById("addLifeGoalBtn").addEventListener("click", async ()=>{
+    const input = document.getElementById("newLifeGoal");
+    const val = input.value.trim();
+    if(!val) return;
+    data.lifeGoals.push({id:uid(), text:val, done:false});
+    input.value = "";
+    await saveData();
+    renderGuidance();
+  });
+
+  document.getElementById("addMonthlyGoalBtn").addEventListener("click", async ()=>{
+    const input = document.getElementById("newMonthlyGoal");
+    const val = input.value.trim();
+    if(!val) return;
+    data.monthlyGoals.push({id:uid(), text:val, done:false});
+    input.value = "";
+    await saveData();
+    renderGuidance();
+  });
+
+  document.getElementById("addWeeklyGoalBtn").addEventListener("click", async ()=>{
+    const input = document.getElementById("newWeeklyGoal");
+    const val = input.value.trim();
+    if(!val) return;
+    data.weeklyGoals.push({id:uid(), text:val, checks:[false,false,false,false,false,false,false]});
+    input.value = "";
+    await saveData();
+    renderGuidance();
+    renderToday();
+  });
+}
+
+function showAuthScreen(message, isError){
+  document.getElementById("authScreen").style.display = "flex";
+  document.getElementById("loadingScreen").style.display = "none";
+  document.getElementById("app").style.display = "none";
+  const statusEl = document.getElementById("authStatus");
+  statusEl.textContent = message || "";
+  statusEl.classList.toggle("error", !!isError);
+}
+
+function showApp(){
+  document.getElementById("authScreen").style.display = "none";
+  document.getElementById("loadingScreen").style.display = "none";
+  document.getElementById("app").style.display = "flex";
+}
+
+function showLoading(){
+  document.getElementById("authScreen").style.display = "none";
+  document.getElementById("loadingScreen").style.display = "block";
+  document.getElementById("app").style.display = "none";
+}
+
+async function startApp(){
+  const ok = await loadData();
+  if(!ok){
+    showAuthScreen("Your session expired. Please sign in again.", true);
+    return;
+  }
+  setupTabs();
+  setupForms();
+  renderAll();
+  showApp();
+  renderTurnstile();
+}
+
+function renderTurnstile(){
+  if(!TURNSTILE_SITE_KEY || TURNSTILE_SITE_KEY === "YOUR_TURNSTILE_SITE_KEY"){
+    // Not configured yet — leave the widget area empty rather than risk breaking the page.
+    return;
+  }
+  if(typeof turnstile === "undefined"){
+    // Script hasn't loaded yet (slow network) — try again shortly.
+    setTimeout(renderTurnstile, 500);
+    return;
+  }
+  if(turnstileWidgetId !== null) return; // already rendered
+  try{
+    turnstileWidgetId = turnstile.render("#turnstileWidget", {
+      sitekey: TURNSTILE_SITE_KEY
+    });
+  }catch(e){
+    console.error("Turnstile render failed", e);
+  }
+}
+
+async function sendMagicLink(){
+  const emailInput = document.getElementById("authEmail");
+  const email = emailInput.value.trim();
+  const statusEl = document.getElementById("authStatus");
+  if(!email || !email.includes("@")){
+    statusEl.textContent = "Enter a valid email address.";
+    statusEl.classList.add("error");
+    return;
+  }
+  statusEl.textContent = "Sending...";
+  statusEl.classList.remove("error");
+  try{
+    const resp = await fetch("/api/auth/request-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+    const json = await resp.json().catch(()=>({}));
+    if(!resp.ok || json.error){
+      throw new Error(json.error || "Could not send the link.");
+    }
+    document.getElementById("authStep1").style.display = "none";
+    document.getElementById("authStep2").style.display = "block";
+    statusEl.textContent = "";
+  }catch(e){
+    statusEl.textContent = e.message || "Something went wrong. Try again.";
+    statusEl.classList.add("error");
+  }
+}
+
+async function verifyMagicLink(token){
+  showLoading();
+  try{
+    const resp = await fetch("/api/auth/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token })
+    });
+    const json = await resp.json().catch(()=>({}));
+    if(!resp.ok || json.error){
+      throw new Error(json.error || "That link isn't valid.");
+    }
+    setSessionToken(json.sessionToken);
+    // remove the token from the URL so it can't be reused or bookmarked
+    window.history.replaceState({}, document.title, window.location.pathname);
+    await startApp();
+  }catch(e){
+    showAuthScreen(e.message || "That link isn't valid. Request a new one.", true);
+  }
+}
+
+(async function init(){
+  document.getElementById("sendLinkBtn").addEventListener("click", sendMagicLink);
+  document.getElementById("signOutBtn").addEventListener("click", ()=>{
+    clearSessionToken();
+    document.getElementById("authStep1").style.display = "block";
+    document.getElementById("authStep2").style.display = "none";
+    document.getElementById("authEmail").value = "";
+    showAuthScreen("");
+  });
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const linkToken = urlParams.get("token");
+
+  if(linkToken){
+    await verifyMagicLink(linkToken);
+    return;
+  }
+
+  const existingToken = getSessionToken();
+  if(existingToken){
+    showLoading();
+    await startApp();
+    return;
+  }
+
+  showAuthScreen("");
+})();
+</script>
+</body>
+</html>
