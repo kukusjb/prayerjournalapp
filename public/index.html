@@ -506,6 +506,22 @@
     color: var(--ink-soft);
     font-size: 0.72rem;
     text-decoration: underline;
+    font-family: inherit;
+  }
+  .data-actions{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top: 16px;
+  }
+  .data-actions-sep{
+    color: var(--rule);
+    font-size: 0.72rem;
+  }
+  .sign-out-btn.danger-link{
+    color: var(--danger);
   }
   details.contact-details{
     margin-top: 18px;
@@ -967,6 +983,13 @@
       <div class="verse-status" id="contactStatus"></div>
     </div>
   </details>
+  <div class="data-actions">
+    <button class="sign-out-btn" id="exportDataBtn">Export my data</button>
+    <span class="data-actions-sep">·</span>
+    <button class="sign-out-btn danger-link" id="deleteAccountBtn">Delete my data</button>
+    <span class="data-actions-sep">·</span>
+    <a class="sign-out-btn" href="/privacy.html" target="_blank" rel="noopener">Privacy & your data</a>
+  </div>
   <div style="text-align:center; margin-top:10px;">
     <button class="sign-out-btn" id="signOutBtn">Sign out</button>
   </div>
@@ -1986,6 +2009,49 @@ async function verifyMagicLink(token){
     document.getElementById("authStep2").style.display = "none";
     document.getElementById("authEmail").value = "";
     showAuthScreen("");
+  });
+
+  document.getElementById("exportDataBtn").addEventListener("click", ()=>{
+    try{
+      const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "prayer-journal-export-" + todayStr() + ".json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast("Export downloaded");
+    }catch(e){
+      showToast("Could not export your data.");
+    }
+  });
+
+  document.getElementById("deleteAccountBtn").addEventListener("click", ()=>{
+    openConfirm({
+      title: "Delete your account and data?",
+      body: "This permanently removes everything you've entered — prayers, categories, goals, your memory verse, all of it — and cannot be undone. You will be signed out immediately.",
+      confirmText: "Delete everything",
+      danger: true,
+      onConfirm: async ()=>{
+        const token = getSessionToken();
+        try{
+          const resp = await fetch("/api/account/delete", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + token }
+          });
+          const json = await resp.json().catch(()=>({}));
+          if(!resp.ok || json.error){
+            throw new Error(json.error || "Could not delete your data.");
+          }
+          clearSessionToken();
+          showAuthScreen("Your account and data have been deleted.");
+        }catch(e){
+          showToast(e.message || "Could not delete your data. Try again.");
+        }
+      }
+    });
   });
 
   const urlParams = new URLSearchParams(window.location.search);

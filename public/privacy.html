@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy & Your Data — Personal Prayer Journal</title>
+<style>
+  :root{
+    --paper: #F5F1E7;
+    --paper-light: #FBF9F3;
+    --ink: #24302B;
+    --ink-soft: #7A7267;
+    --rule: #E1D9C8;
+    --primary: #3F5B4C;
+    --gold: #A9843E;
+    --danger: #A34B4B;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Avenir Next","Segoe UI","Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .serif{ font-family: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif; }
+  main{
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+  }
+  h1{
+    font-size: 1.6rem;
+    margin: 0 0 6px;
+  }
+  .updated{
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-bottom: 28px;
+  }
+  h2{
+    font-size: 1.1rem;
+    margin: 32px 0 8px;
+    color: var(--primary);
+  }
+  p, li{
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+  ul{ padding-left: 22px; }
+  .card{
+    background: var(--paper-light);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 28px 0;
+  }
+  .back-link{
+    display:inline-block;
+    margin-bottom: 20px;
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 0.85rem;
+  }
+  .back-link:hover{ text-decoration: underline; }
+  .footnote{
+    margin-top: 40px;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+<main>
+  <a class="back-link" href="/">← Back to Prayer Journal</a>
+  <h1 class="serif">Privacy & Your Data</h1>
+  <div class="updated">In plain language, no legal jargon.</div>
+
+  <h2 class="serif">What we store</h2>
+  <p>Your prayer lists, categories, life goals, memory verses, and everything else you enter into the app — plus your email address, which is how you sign in. That's it. We don't track your location, sell your information, or share it with anyone.</p>
+
+  <h2 class="serif">Who can see your data</h2>
+  <p>Only you. Every request the app makes is checked against your signed-in session before it's allowed to read or write anything, and it only ever touches your own data — never anyone else's. There's no admin view where someone browses everyone's prayer lists; the only way to see raw data is directly in the database itself, which only the app's administrator can access.</p>
+
+  <h2 class="serif">How signing in works</h2>
+  <p>There's no password to remember or to leak. When you enter your email, we send a one-time link that expires in 15 minutes and can only be used once. After that, you stay signed in on that device for about 90 days.</p>
+
+  <h2 class="serif">How your data is protected</h2>
+  <ul>
+    <li>All traffic between your device and our servers is encrypted (HTTPS).</li>
+    <li>Your data is encrypted at rest by our hosting provider (Cloudflare).</li>
+    <li>Sign-in tokens are never stored in a form that could be read back and reused, even by someone with direct database access.</li>
+  </ul>
+
+  <h2 class="serif">Will my data ever be lost?</h2>
+  <p>Our database automatically keeps a rolling 30-day history, so accidental data loss (a bug, a mistake, an accidental edit) can typically be recovered. That said, this is a small, independently run project — not a large company with a formal service guarantee. We take reasonable, genuine care, but we can't promise the uptime or support guarantees of a commercial product.</p>
+
+  <div class="card">
+    <h2 class="serif" style="margin-top:0;">Your data, your control</h2>
+    <p>From inside the app, you can:</p>
+    <ul>
+      <li><strong>Export your data</strong> as a file you can keep, at any time.</li>
+      <li><strong>Permanently delete</strong> your account and everything associated with it, at any time. This can't be undone.</li>
+    </ul>
+    <p>Both options are available near the bottom of the app, under your account settings.</p>
+  </div>
+
+  <h2 class="serif">Questions</h2>
+  <p>If anything here is unclear, or you'd like your data handled differently, use the "Contact the developer" link in the app — a real person reads and responds to those.</p>
+
+  <div class="footnote">Personal Prayer Journal — a small, independently run project.</div>
+</main>
+</body>
+</html>
