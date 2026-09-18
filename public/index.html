@@ -1036,6 +1036,7 @@
 
 <script>
 const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const FULL_DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 let data = null;
 let searchTerm = "";
 // This is your Turnstile SITE key — it's meant to be public, safe to leave in client code.
@@ -1500,7 +1501,7 @@ function renderToday(){
   const todayCategory = cats.length ? cats[dayIdx % cats.length] : null;
   document.getElementById("weeklyHeading").textContent = todayCategory ? todayCategory : "Today's category";
   document.getElementById("weeklySub").textContent = todayCategory
-    ? "Your weekly focus for " + DAY_NAMES[dayIdx] + "day"
+    ? "Your weekly focus for " + FULL_DAY_NAMES[dayIdx]
     : "Add categories under Prayer Lists to rotate through the week.";
   const weeklyWrap = document.getElementById("weeklyList");
   weeklyWrap.innerHTML = "";
