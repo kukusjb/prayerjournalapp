@@ -5,6 +5,7 @@ import { handleJournalGet, handleJournalPost } from "./journal.js";
 import { handleContact } from "./contact.js";
 import { handleDeleteAccount } from "./account.js";
 import { json } from "./utils.js";
+import { handleJourneys } from "./journeys.js";
 
 export default {
   async fetch(request, env, ctx) {
@@ -13,6 +14,9 @@ export default {
     const method = request.method;
 
     try {
+      if (path === "/api/journeys" || path.startsWith("/api/journeys/")) {
+        return await handleJourneys(request, env);
+      }
       if (path === "/api/esv" && method === "GET") {
         return await handleEsv(request, env);
       }

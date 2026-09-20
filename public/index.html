@@ -9,6 +9,8 @@
 <meta name="apple-mobile-web-app-title" content="Prayer Journal">
 <meta name="theme-color" content="#3F5B4C">
 <title>Personal Prayer Journal</title>
+<link rel="stylesheet" href="/journeys.css">
+<script src="/journeys.js"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
   :root{
@@ -828,9 +830,11 @@
     <button data-tab="today" class="active">Today</button>
     <button data-tab="lists">Prayer Lists</button>
     <button data-tab="guidance">Guidance</button>
+    <button data-tab="journeys">Prayer Guide</button>
   </nav>
 
   <main>
+    <div id="panel-journeys" class="panel"><div id="journeyRoot"></div></div>
     <!-- TODAY -->
     <div class="panel active" id="panel-today">
       <div id="todayGreeting" class="today-greeting"></div>
@@ -1929,6 +1933,7 @@ async function startApp(){
   renderAll();
   showApp();
   renderTurnstile();
+  await window.PrayerJourneys.start(getSessionToken());
 }
 
 function renderTurnstile(){
@@ -2004,7 +2009,9 @@ async function verifyMagicLink(token){
 
 (async function init(){
   document.getElementById("sendLinkBtn").addEventListener("click", sendMagicLink);
-  document.getElementById("signOutBtn").addEventListener("click", ()=>{
+  document.getElementById("signOutBtn").addEventListener("click", async ()=>{
+    try { await window.PrayerJourneys.save(); } catch(e) { showToast("Please save your Prayer Guide before signing out. " + e.message); return; }
+    window.PrayerJourneys.reset();
     clearSessionToken();
     document.getElementById("authStep1").style.display = "block";
     document.getElementById("authStep2").style.display = "none";
@@ -2012,9 +2019,10 @@ async function verifyMagicLink(token){
     showAuthScreen("");
   });
 
-  document.getElementById("exportDataBtn").addEventListener("click", ()=>{
+  document.getElementById("exportDataBtn").addEventListener("click", async ()=>{
     try{
-      const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+      const prayerJourneys = await window.PrayerJourneys.exportData();
+      const blob = new Blob([JSON.stringify({...data, prayerJourneys}, null, 2)], {type: "application/json"});
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -2047,6 +2055,7 @@ async function verifyMagicLink(token){
             throw new Error(json.error || "Could not delete your data.");
           }
           clearSessionToken();
+          window.PrayerJourneys.reset();
           showAuthScreen("Your account and data have been deleted.");
         }catch(e){
           showToast(e.message || "Could not delete your data. Try again.");

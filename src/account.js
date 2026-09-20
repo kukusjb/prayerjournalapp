@@ -7,6 +7,7 @@ export async function handleDeleteAccount(request, env) {
   const user = await env.DB.prepare("SELECT email FROM users WHERE id = ?").bind(userId).first();
 
   const statements = [
+    env.DB.prepare("DELETE FROM prayer_journeys WHERE user_id = ?").bind(userId),
     env.DB.prepare("DELETE FROM journal_data WHERE user_id = ?").bind(userId),
     env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(userId),
     env.DB.prepare("DELETE FROM users WHERE id = ?").bind(userId)
