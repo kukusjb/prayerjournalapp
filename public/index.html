@@ -829,8 +829,8 @@
   <nav class="tabs">
     <button data-tab="today" class="active">Today</button>
     <button data-tab="lists">Prayer Lists</button>
-    <button data-tab="guidance">Guidance</button>
-    <button data-tab="journeys">Prayer Guide</button>
+    <button data-tab="guidance">Discipleship</button>
+    <button data-tab="journeys">Guided Prayer</button>
   </nav>
 
   <main>
@@ -1574,7 +1574,7 @@ function renderToday(){
   const goalsWrap = document.getElementById("todayGoalsList");
   goalsWrap.innerHTML = "";
   if(data.weeklyGoals.length===0){
-    goalsWrap.appendChild(el("div",{class:"empty", text:"Add weekly goals under Guidance."}));
+    goalsWrap.appendChild(el("div",{class:"empty", text:"Add weekly goals under Discipleship."}));
   } else {
     data.weeklyGoals.forEach(g=>{
       const row = el("div",{class:"item-row"});
@@ -2044,7 +2044,7 @@ async function verifyMagicLink(token){
 (async function init(){
   document.getElementById("sendLinkBtn").addEventListener("click", sendMagicLink);
   document.getElementById("signOutBtn").addEventListener("click", async ()=>{
-    try { await window.PrayerJourneys.save(); } catch(e) { showToast("Please save your Prayer Guide before signing out. " + e.message); return; }
+    try { await window.PrayerJourneys.save(); } catch(e) { showToast("Please save your Guided Prayer before signing out. " + e.message); return; }
     window.PrayerJourneys.reset();
     clearSessionToken();
     document.getElementById("authStep1").style.display = "block";
