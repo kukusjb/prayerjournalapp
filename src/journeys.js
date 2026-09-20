@@ -24,6 +24,12 @@ export function validateJourney(input) {
   data.step = input.step;
   if (!["in_prayer", "waiting", "answered"].includes(input.status)) throw new Error("Invalid status.");
   data.status = input.status;
+  data.frequency = input.frequency === undefined ? "daily" : input.frequency;
+  if (!["daily", "weekly", "none"].includes(data.frequency)) throw new Error("Choose Daily, Weekly, or Guide only.");
+  data.category = input.category === undefined ? "" : input.category;
+  if (typeof data.category !== "string" || data.category.length > 160) throw new Error("Invalid prayer category.");
+  data.lastPrayed = input.lastPrayed === undefined ? "" : input.lastPrayed;
+  if (!validDate(data.lastPrayed)) throw new Error("Invalid prayed date.");
   for (const key of ["submittedDate", "answeredDate"]) {
     if (!validDate(input[key])) throw new Error("Enter a valid date.");
     data[key] = input[key];
