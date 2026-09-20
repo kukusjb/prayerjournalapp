@@ -1262,7 +1262,40 @@ function matchesSearch(item){
   return hay.includes(searchTerm);
 }
 
+function prayerItems(){ return data.items.concat(window.PrayerJourneys.items()); }
+async function openPrayerJourney(id){
+  try {
+    await window.PrayerJourneys.open(id);
+    document.querySelector('nav.tabs button[data-tab="journeys"]').click();
+  } catch(e) { showToast(e.message); }
+}
+function journeyRow(item){
+  const row = el("div",{class:"item-row"});
+  row.appendChild(el("div",{class:"person",text:item.person}));
+  if(item.need) row.appendChild(el("div",{class:"need",text:item.need}));
+  row.appendChild(el("span",{class:"tag",text:"Prayer Journey · " + item.category}));
+  const actions = el("div",{class:"item-actions"});
+  if(!item.answered){
+    const label = el("label",{class:"prayed-label"});
+    const check = el("input",{attrs:{type:"checkbox"}});
+    check.checked = item.lastPrayed === todayStr();
+    check.onchange = async () => {
+      check.disabled = true;
+      try { await window.PrayerJourneys.markPrayed(item.journeyId, check.checked ? todayStr() : ""); }
+      catch(e) { check.checked = !check.checked; showToast(e.message); }
+      finally { check.disabled = false; }
+    };
+    label.append(check, document.createTextNode(" Prayed today")); actions.appendChild(label);
+  } else {
+    row.appendChild(el("div",{class:"meta",text:"Answered " + item.answeredDate}));
+    if(item.answerNote) row.appendChild(el("p",{text:item.answerNote}));
+  }
+  const open = el("button",{class:"journey-secondary",text:item.answered ? "Review journey" : "Open journey",attrs:{type:"button"}});
+  open.onclick = () => openPrayerJourney(item.journeyId); actions.appendChild(open);
+  row.appendChild(actions); return row;
+}
 function itemRow(item){
+  if(item.journeyId) return journeyRow(item);
   const today = todayStr();
   let prayedNow;
   if(item.frequency === "daily") prayedNow = item.lastPrayed === today;
@@ -1336,6 +1369,7 @@ function itemRow(item){
 }
 
 function answeredRow(item){
+  if(item.journeyId) return journeyRow(item);
   const wrap = el("div",{class:"answered-row"});
   wrap.appendChild(el("div",{class:"person", text:item.person}));
   if(item.need && item.need.trim()) wrap.appendChild(el("div",{class:"need", text:item.need}));
@@ -1401,7 +1435,7 @@ function renderListsByFrequency(){
 
   // Update chip counts and active state
   ["daily","weekly","monthly","annual"].forEach(freq=>{
-    const count = data.items.filter(i=>i.frequency===freq && !i.answered).length;
+    const count = prayerItems().filter(i=>i.frequency===freq && !i.answered).length;
     const countEl = document.getElementById("count-"+freq);
     if(countEl) countEl.textContent = count > 0 ? count : "";
     const chip = document.querySelector('.freq-chip[data-freq="'+freq+'"]');
@@ -1431,8 +1465,8 @@ function renderListsByFrequency(){
 
   const container = document.getElementById("filteredList");
   container.innerHTML = "";
-  const totalForFreq = data.items.filter(i=>i.frequency===activeFreqFilter && !i.answered).length;
-  let items = data.items.filter(i=>i.frequency===activeFreqFilter && !i.answered && matchesSearch(i));
+  const totalForFreq = prayerItems().filter(i=>i.frequency===activeFreqFilter && !i.answered).length;
+  let items = prayerItems().filter(i=>i.frequency===activeFreqFilter && !i.answered && matchesSearch(i));
   if(activeCategoryFilter !== "all"){
     items = items.filter(i=>i.category===activeCategoryFilter);
   }
@@ -1453,8 +1487,8 @@ function renderAnsweredList(){
   const section = document.getElementById("section-answered");
   if(!container) return;
   container.innerHTML = "";
-  const totalAnswered = data.items.filter(i=>i.answered).length;
-  const items = data.items
+  const totalAnswered = prayerItems().filter(i=>i.answered).length;
+  const items = prayerItems()
     .filter(i=>i.answered && matchesSearch(i))
     .sort((a,b)=> (b.answeredDate||"").localeCompare(a.answeredDate||""));
 
@@ -1492,7 +1526,7 @@ function renderToday(){
   // daily
   const dailyWrap = document.getElementById("dailyList");
   dailyWrap.innerHTML = "";
-  const dailyItems = data.items.filter(i=>i.frequency==="daily" && !i.answered);
+  const dailyItems = prayerItems().filter(i=>i.frequency==="daily" && !i.answered);
   if(dailyItems.length===0){
     dailyWrap.appendChild(el("div",{class:"empty", text:"Add daily needs under Prayer Lists to see them here."}));
   } else {
@@ -1509,7 +1543,7 @@ function renderToday(){
     : "Add categories under Prayer Lists to rotate through the week.";
   const weeklyWrap = document.getElementById("weeklyList");
   weeklyWrap.innerHTML = "";
-  const weeklyItems = data.items.filter(i=>i.frequency==="weekly" && i.category===todayCategory && !i.answered);
+  const weeklyItems = prayerItems().filter(i=>i.frequency==="weekly" && i.category===todayCategory && !i.answered);
   if(weeklyItems.length===0){
     weeklyWrap.appendChild(el("div",{class:"empty", text:"Nothing in this category yet — add someone under Prayer Lists."}));
   } else {
@@ -1933,7 +1967,7 @@ async function startApp(){
   renderAll();
   showApp();
   renderTurnstile();
-  await window.PrayerJourneys.start(getSessionToken());
+  await window.PrayerJourneys.start(getSessionToken(), {categories: () => data.categories, onUpdate: () => { renderListsByFrequency(); renderAnsweredList(); renderToday(); }});
 }
 
 function renderTurnstile(){
