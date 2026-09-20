@@ -92,7 +92,7 @@ window.PrayerJourneys = (() => {
       ...(body ? { body: JSON.stringify(body) } : {})
     });
     const result = await response.json().catch(() => ({}));
-    if (epoch !== generation || session !== token) throw new Error("The signed-in account changed. Reopen Prayer Guide.");
+    if (epoch !== generation || session !== token) throw new Error("The signed-in account changed. Reopen Guided Prayer.");
     if (!response.ok) throw new Error(result.error || "Could not reach your saved journeys. Please try again.");
     return result;
   }
