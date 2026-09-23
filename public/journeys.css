@@ -7,14 +7,14 @@
 #journeyRoot :focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
 .journey-primary { background: var(--primary); color: white; border: 1px solid var(--primary); }
 .journey-secondary { background: var(--paper-light); color: var(--primary); border: 1px solid var(--rule); }
-.journey-muted { color: #655f55; font-size: .85rem; }
+.journey-muted { color: var(--ink); font-size: .85rem; }
 .journey-phase { color: var(--primary); font-family: Georgia, serif; font-style: italic; margin-top: 24px; }
 #journeyRoot progress { width: 100%; height: 8px; border: none; border-radius: 8px; overflow: hidden; background: var(--rule); accent-color: var(--primary); }
 #journeyRoot progress::-webkit-progress-bar { background: var(--rule); }
 #journeyRoot progress::-webkit-progress-value { background: var(--primary); }
 .journey-field { border: 0; padding: 0; margin: 24px 0; min-width: 0; }
 .journey-field > label, .journey-field legend { display: block; font-weight: 600; margin-bottom: 10px; }
-#journeyRoot textarea, #journeyRoot input[type="text"], #journeyRoot input[type="date"], #journeyRoot select { display: block; width: 100%; min-width: 0; max-width: 100%; font: inherit; font-size: 16px; padding: 12px; color: var(--ink); background: white; border: 1px solid var(--rule); border-radius: 10px; }
+#journeyRoot textarea, #journeyRoot input[type="text"], #journeyRoot input[type="date"], #journeyRoot select { display: block; width: 100%; min-width: 0; max-width: 100%; font: inherit; font-size: 16px; padding: 12px; color: var(--ink); background: var(--paper-light); border: 1px solid var(--rule); border-radius: 10px; }
 #journeyRoot textarea { resize: vertical; min-height: 112px; }
 #journeyRoot input[type="checkbox"], #journeyRoot input[type="radio"] { width: 20px; height: 20px; flex: 0 0 20px; accent-color: var(--primary); margin: 2px 0 0; }
 .journey-check, .journey-choices label { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; min-height: 44px; cursor: pointer; font-weight: 400; }
@@ -24,5 +24,19 @@
 .journey-actions button { flex: 1; white-space: nowrap; }
 .journey-status { font-size: .85rem; color: var(--primary); min-height: 24px; }
 .journey-status.journey-error { color: var(--danger); font-weight: 600; }
-.journey-card { border: 1px solid var(--rule); border-radius: 12px; padding: 18px; background: white; margin: 14px 0; }
+.journey-card { border: 1px solid var(--rule); border-radius: 12px; padding: 18px; background: var(--paper-light); margin: 14px 0; }
 .journey-badge { display: inline-block; background: var(--paper); color: var(--primary); border-radius: 20px; padding: 3px 10px; font-size: .8rem; }
+
+#journeyRoot .journey-field[hidden] { display: none; }
+#journeyRoot .journey-field select + label, #journeyRoot .journey-field input + label { margin-top: 16px; }
+#journeyRoot .journey-scripture { background: var(--paper); border-left: 3px solid var(--gold); padding: 20px; margin: 24px 0; border-radius: 10px; }
+#journeyRoot .journey-scripture h3 { margin-top: 0; }
+#journeyRoot .journey-scripture a { display: inline-block; padding: 12px 0; color: var(--primary); margin-right: 12px; }
+#journeyRoot .journey-passage { font-family: Georgia, serif; font-size: 1.12rem; line-height: 1.8; white-space: pre-wrap; }
+#journeyRoot .journey-answer { white-space: pre-wrap; }
+#journeyRoot .journey-reflection { margin: 28px 0; }
+#journeyRoot .journey-reference { color: var(--primary); font-weight: 600; }
+#journeyRoot p, #journeyRoot h2, #journeyRoot h3 { overflow-wrap: anywhere; }
+#journeyRoot details summary { cursor: pointer; padding: 12px 0; }
+#journeyRoot .journey-actions button { white-space: normal; min-width: 80px; }
+#journeyRoot > button { margin: 8px 8px 8px 0; }
