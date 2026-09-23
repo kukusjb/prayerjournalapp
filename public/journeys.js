@@ -1,35 +1,13 @@
 /* The guide uses the same signed-in session as the existing journal. */
 window.PrayerJourneys = (() => {
-  const titles = ["Bring It Before God", "Surrender the Outcome", "Listen Through Scripture", "Pray Specifically", "Choose Faith", "Walk in Obedience"];
-  const descriptions = [
-    "Begin by honestly bringing what is on your heart before God.",
-    "Prayer isn't only bringing God the outcome we want. It's trusting Him with the outcome.",
-    "God's Word gives us truth to hold onto as we pray. Take time to find a passage that speaks into what you're facing.",
-    "Now bring your request before God. In light of what you've read in Scripture, tell Him specifically what you're asking Him to do.",
-    "Faith doesn't mean knowing exactly how God will answer. It means trusting who God is while you wait.",
-    "Prayer should shape how we live. Consider whether God is calling you to take a step of obedience while you wait."
-  ];
+  const titles = ["Abide in Christ", "Abide in the Word", "Allow the Holy Spirit to Lead You in Truth", "Ask According to God's Will", "Accept God's Will in Faith", "Act on the Basis of God's Word to You"];
   const choices = [
-    ["power", "Help me see God's power and faithfulness"],
-    ["blessing", "Help me recognize God's blessings, even when they come differently than I expect"],
-    ["character", "Grow Christlike character in me"],
-    ["prayer", "Deepen my relationship with God through prayer"],
-    ["serve", "Help me encourage or serve someone else"], ["other", "Other"]
+    ["power", "A platform for God to demonstrate His power"],
+    ["blessing", "A blessing from God for which I have not asked"],
+    ["character", "An opportunity for God to develop in me faith, love, patience, or another Christlike character trait"],
+    ["prayer", "An opportunity for me to develop a more effective prayer life"]
   ];
-  const labels = { in_progress: "In Progress", praying: "Praying", answered: "Answered", in_prayer: "In Progress", waiting: "Praying" };
-  const books = "Genesis:50|Exodus:40|Leviticus:27|Numbers:36|Deuteronomy:34|Joshua:24|Judges:21|Ruth:4|1 Samuel:31|2 Samuel:24|1 Kings:22|2 Kings:25|1 Chronicles:29|2 Chronicles:36|Ezra:10|Nehemiah:13|Esther:10|Job:42|Psalms:150|Proverbs:31|Ecclesiastes:12|Song of Solomon:8|Isaiah:66|Jeremiah:52|Lamentations:5|Ezekiel:48|Daniel:12|Hosea:14|Joel:3|Amos:9|Obadiah:1|Jonah:4|Micah:7|Nahum:3|Habakkuk:3|Zephaniah:3|Haggai:2|Zechariah:14|Malachi:4|Matthew:28|Mark:16|Luke:24|John:21|Acts:28|Romans:16|1 Corinthians:16|2 Corinthians:13|Galatians:6|Ephesians:6|Philippians:4|Colossians:4|1 Thessalonians:5|2 Thessalonians:3|1 Timothy:6|2 Timothy:4|Titus:3|Philemon:1|Hebrews:13|James:5|1 Peter:5|2 Peter:3|1 John:5|2 John:1|3 John:1|Jude:1|Revelation:22".split("|").map(value => { const [name, count] = value.split(":"); return [name, Number(count)]; });
-  const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); };
-  let passageCache = null, screen = "home", actionBusy = false;
-  function normalize(journey) {
-    const d = journey.data;
-    if (d.formatVersion !== 2) {
-      if (!d.title.trim()) d.title = "Untitled prayer journey";
-      Object.assign(d, { formatVersion: 2, legacy: true, surrender: "", glorifyOther: "", lessons: "", scriptureReference: "", scriptureBook: "", scriptureChapter: "", scriptureVerses: "",
-        status: d.status === "waiting" ? "praying" : d.status === "answered" ? "answered" : "in_progress",
-        view: d.status === "in_prayer" ? "guide" : "review" });
-    }
-    return journey;
-  }
+  const labels = { in_prayer: "In Prayer", waiting: "Waiting", answered: "Answered" };
   let root, current = null, token = null, timer, pending = null, revision = 0, savedRevision = 0, generation = 0;
   let journeys = [], categories = () => [], onUpdate = () => {};
   function publish(journey) {
@@ -39,7 +17,7 @@ window.PrayerJourneys = (() => {
   function items() {
     return journeys.filter(j => j.data.frequency !== "none").map(j => ({
       id: j.id, journeyId: j.id, person: j.data.title || "Untitled prayer journey",
-      need: j.data.specificRequest || j.data.problem,
+      need: j.data.specificRequest || j.data.questionToGod || j.data.problem,
       frequency: j.data.frequency || "daily",
       category: categories().includes(j.data.category) ? j.data.category : (categories()[0] || "Uncategorized"),
       lastPrayed: j.data.lastPrayed, answered: j.data.status === "answered",
@@ -49,7 +27,8 @@ window.PrayerJourneys = (() => {
   async function open(id) {
     await save();
     const result = await api("/" + id);
-    current = normalize(result.journey); revision = savedRevision = 0; screen = current.data.view; render();
+    if (result.journey.data.formatVersion === 2) throw new Error("This journey was created with the newer guide. You can export it or delete it from My Prayer Journeys.");
+    current = result.journey; revision = savedRevision = 0; render();
   }
   async function markPrayed(id, date) {
     if (current?.id === id) {
@@ -91,10 +70,9 @@ window.PrayerJourneys = (() => {
     const b = node("button", text, secondary ? "journey-secondary" : "journey-primary");
     b.type = "button";
     b.onclick = async () => {
-      if (actionBusy) return;
-      actionBusy = true; b.disabled = true;
+      b.disabled = true;
       try { await action(); } catch (e) { status(e.message, true); }
-      finally { actionBusy = false; b.disabled = false; }
+      finally { b.disabled = false; }
     };
     return b;
   }
@@ -111,19 +89,22 @@ window.PrayerJourneys = (() => {
     const session = token, epoch = generation;
     const response = await fetch("/api/journeys" + path, {
       method, cache: "no-store",
-      headers: { Authorization: "Bearer " + session, "Content-Type": "application/json" },
-      ...(body ? { body: JSON.stringify(body) } : {})
+      headers: { Authorization: "Bearer " + session, "Content-Type": "application/json", ...(method === "DELETE" ? { "If-Match": String(body.version) } : {}) },
+      ...(body && method !== "DELETE" ? { body: JSON.stringify(body) } : {})
     });
     const result = await response.json().catch(() => ({}));
     if (epoch !== generation || session !== token) throw new Error("The signed-in account changed. Reopen Guided Prayer.");
-    if (!response.ok) throw new Error(result.error || "Could not reach your saved journeys. Please try again.");
+    if (!response.ok) {
+      const error = new Error(result.error || "Could not reach your saved journeys. Please try again.");
+      error.status = response.status; throw error;
+    }
     return result;
   }
   function changed() {
     revision++;
     status("Unsaved changes…");
     clearTimeout(timer);
-    timer = setTimeout(() => { save().catch(() => {}); }, 1200);
+    timer = setTimeout(() => { save().catch(() => {}); }, 800);
   }
   async function save() {
     clearTimeout(timer);
@@ -156,207 +137,147 @@ window.PrayerJourneys = (() => {
     const input = node(type === "textarea" ? "textarea" : "input");
     input.id = id; input.name = key;
     if (type !== "textarea") input.type = type;
-    input.value = current.data[key] || "";
+    input.value = current.data[key];
     input.maxLength = key === "title" ? 160 : 10000;
     if (type === "textarea") input.rows = 4;
     input.addEventListener("input", () => { current.data[key] = input.value; changed(); });
     wrap.append(caption, input); return wrap;
   }
+  function yesNo(key, question) {
+    const set = node("fieldset", undefined, "journey-field");
+    set.append(node("legend", question));
+    const row = node("div", undefined, "journey-choices");
+    for (const [value, text] of [["yes", "Yes"], ["no", "No"], ["", "Not answered"]]) {
+      const label = node("label"), input = node("input");
+      input.type = "radio"; input.name = key; input.value = value; input.checked = current.data[key] === value;
+      input.onchange = () => { current.data[key] = value; changed(); };
+      label.append(input, document.createTextNode(text)); row.append(label);
+    }
+    set.append(row); return set;
+  }
   function heading(text) { const h = node("h2", text, "serif"); h.tabIndex = -1; return h; }
   function blank() {
-    return { formatVersion: 2, legacy: false, view: "guide", surrender: "", glorifyOther: "", lessons: "", scriptureReference: "", scriptureBook: "", scriptureChapter: "", scriptureVerses: "", frequency: "daily", category: categories()[0] || "", lastPrayed: "", title: "", problem: "", questionToGod: "", scripture: "", scriptureApplication: "", specificRequest: "", belief: "", plannedActions: "", godActions: "", nextActions: "", abiding: "", godFirst: "", inWord: "", willingToWait: "", spiritLeading: "", promiseAccepted: "", possibleUses: [], step: 0, status: "in_progress", submittedDate: "", answeredDate: "" };
+    return { frequency: "daily", category: categories()[0] || "", lastPrayed: "", title: "", problem: "", questionToGod: "", scripture: "", scriptureApplication: "", specificRequest: "", belief: "", plannedActions: "", godActions: "", nextActions: "", abiding: "", godFirst: "", inWord: "", willingToWait: "", spiritLeading: "", promiseAccepted: "", possibleUses: [], step: 1, status: "in_prayer", submittedDate: "", answeredDate: "" };
   }
-  async function refresh() {
-    await save();
-    const result = await api(); journeys = result.journeys; publish();
-    current = null; revision = savedRevision = 0;
-  }
-  async function home() {
-    await refresh(); screen = "home";
-    root.replaceChildren(heading("Guided Prayer"), node("p", "Slow down, seek God's Word, and walk through your prayer one step at a time."), node("p", "Private to your account. Your reflections save as you go while you are online.", "journey-muted"), statusNode());
-    const id = crypto.randomUUID();
-    const actions = node("div", undefined, "journey-actions");
-    actions.append(button("Begin a Prayer Journey", async () => {
-      const result = await api("", "POST", { id, data: blank() });
-      current = result.journey; revision = savedRevision = 0; screen = "guide"; publish(current); render();
-    }), button("My Prayer Journeys", list, true)); root.append(actions); focusHeading();
+  function confirmDelete(journey) {
+    return new Promise(resolve => {
+      const dialog = node("dialog", undefined, "journey-delete-dialog");
+      dialog.setAttribute("aria-labelledby", "journey-delete-title");
+      dialog.setAttribute("aria-describedby", "journey-delete-description");
+      const title = node("h2", "Delete this prayer journey?", "serif"); title.id = "journey-delete-title";
+      const description = node("p", "This will permanently delete “" + (journey.data.title || "Untitled prayer") + "” and its reflections. Its linked Daily or Weekly entry will also disappear. This cannot be undone."); description.id = "journey-delete-description";
+      const feedback = node("p", "", "journey-status journey-error"); feedback.setAttribute("role", "alert");
+      let busy = false;
+      const cancel = node("button", "Cancel", "journey-secondary"); cancel.type = "button";
+      const remove = node("button", "Delete permanently", "journey-delete-button"); remove.type = "button";
+      const close = () => { dialog.close(); dialog.remove(); resolve(); };
+      cancel.onclick = close;
+      dialog.addEventListener("cancel", event => { event.preventDefault(); if (!busy) close(); });
+      remove.onclick = async () => {
+        if (busy) return;
+        busy = true; cancel.disabled = remove.disabled = true; feedback.textContent = "Deleting…";
+        try {
+          try { await api("/" + journey.id, "DELETE", { version: journey.version }); }
+          catch (e) { if (e.status !== 404) throw e; }
+          journeys = journeys.filter(j => j.id !== journey.id); publish();
+          // Update locally even if a later refresh would fail; never leave a deleted row on screen.
+          const card = root.querySelector('[data-journey-id="' + journey.id + '"]'); card?.remove();
+          if (!journeys.length) root.append(node("p", "Your prayer journeys will appear here. Begin a prayer whenever you are ready.", "journey-muted"));
+          close(); status("Prayer journey deleted."); focusHeading();
+        } catch (e) { feedback.textContent = "Not deleted. " + e.message; }
+        finally { busy = false; cancel.disabled = remove.disabled = false; }
+      };
+      const actions = node("div", undefined, "journey-actions"); actions.append(cancel, remove);
+      dialog.append(title, description, feedback, actions); root.append(dialog); dialog.showModal(); cancel.focus();
+    });
   }
   async function list() {
-    await refresh(); screen = "list";
-    root.replaceChildren(heading("My Prayer Journeys"), node("p", "Return to your prayers, listen again, and remember what God has done."), button("Guided Prayer", home, true), statusNode());
+    await save();
+    // Keep the existing screen intact if loading fails.
+    const result = await api();
+    journeys = result.journeys; publish();
+    current = null; revision = savedRevision = 0;
+    root.replaceChildren(heading("Guide to Praying in Faith"),
+      node("p", "Take time to listen, reflect, and respond through six steps. You may leave any reflection unanswered and return when you are ready."),
+      node("p", "Private to your account. Your answers save automatically while you are online.", "journey-muted"));
+    const newId = crypto.randomUUID();
+    root.append(button("Begin New Prayer", async () => {
+      const result = await api("", "POST", { id: newId, data: blank() });
+      current = result.journey; revision = savedRevision = 0; publish(current); render();
+    }), statusNode(), node("h3", "My Prayer Journeys", "serif"));
     if (!journeys.length) root.append(node("p", "Your prayer journeys will appear here. Begin a prayer whenever you are ready.", "journey-muted"));
-    for (const state of ["In Progress", "Praying", "Answered"]) {
-      const group = journeys.filter(j => labels[j.data.status] === state);
-      if (!group.length) continue;
-      root.append(node("h3", state, "serif"));
-      for (const journey of group) {
-        const d = journey.data, card = node("article", undefined, "journey-card");
-        card.append(node("span", state, "journey-badge"), node("h4", d.title || "Untitled prayer journey", "serif"), node("p", "Started " + new Date(journey.createdAt).toLocaleDateString(), "journey-muted"));
-        if (d.submittedDate) card.append(node("p", "Committed " + d.submittedDate, "journey-muted"));
-        if (d.scriptureReference) card.append(node("p", d.scriptureReference + " · ESV", "journey-reference"));
-        if (d.answeredDate && state === "Answered") card.append(node("p", "Answered " + d.answeredDate, "journey-muted"));
-        const actions = node("div", undefined, "journey-actions");
-        actions.append(button(state === "In Progress" ? "Continue Journey" : state === "Answered" ? "Remember This Prayer" : "Continue Praying", () => open(journey.id), true));
-        if (state === "Praying") actions.append(button("Record an Answer", async () => { await open(journey.id); await answer(); }));
-        card.append(actions); root.append(card);
-      }
+    for (const journey of journeys) {
+      const card = node("article", undefined, "journey-card");
+      card.dataset.journeyId = journey.id;
+      card.append(node("span", labels[journey.data.status] || "Saved journey", "journey-badge"), node("h4", journey.data.title || "Untitled prayer", "serif"),
+        node("p", (journey.data.formatVersion === 2 ? "Saved with the newer guide" : "Step " + journey.data.step + " of 6") + " · Updated " + new Date(journey.updatedAt).toLocaleDateString(), "journey-muted"));
+      if (journey.data.submittedDate) card.append(node("p", "Submitted: " + journey.data.submittedDate + (journey.data.answeredDate ? " · Answered: " + journey.data.answeredDate : ""), "journey-muted"));
+      if (journey.data.formatVersion === 2) card.append(node("p", "Created with the newer guide. Your answers are preserved; you can export your data or delete this journey.", "journey-muted"));
+      else card.append(button(journey.data.status === "in_prayer" ? "Continue Prayer" : "Review / Record an Answer", async () => {
+        const result = await api("/" + journey.id);
+        current = result.journey; revision = savedRevision = 0;
+        render();
+      }, true));
+      const remove = button("Delete Journey", () => confirmDelete(journey), true);
+      remove.classList.add("journey-delete-link"); card.append(remove); root.append(card);
     }
     focusHeading();
   }
-  function shell(title, description) {
-    root.replaceChildren(button("My Prayer Journeys", list, true), heading(title));
-    if (description) root.append(node("p", description));
-    root.append(statusNode()); status(dirty() ? "Unsaved changes…" : "Saved to your account");
-  }
-  function reflection(label, value) {
-    const section = node("section", undefined, "journey-reflection");
-    section.append(node("h3", label, "serif"), node("p", value || "Left open for reflection.", "journey-answer"));
-    return section;
-  }
-  function scripturePanel(reference) {
-    const pane = node("section", undefined, "journey-scripture verse-display");
-    pane.setAttribute("aria-label", "Selected Scripture");
-    pane.append(node("h3", reference ? reference + " · ESV" : "A passage to pray with", "serif"));
-    if (!reference) { pane.append(node("p", "Choose a passage above. You can also continue and return to Scripture later.")); return pane; }
-    const text = node("p", "Loading Scripture…", "journey-passage"); text.setAttribute("aria-live", "polite"); pane.append(text);
-    const link = node("a", "Read on ESV.org"); link.href = "https://www.esv.org/" + encodeURIComponent(reference) + "/"; link.target = "_blank"; link.rel = "noopener noreferrer"; pane.append(link);
-    const load = async () => {
-      text.textContent = "Loading Scripture…";
-      try { const result = await lookup(reference); if (pane.isConnected) text.textContent = result.passages[0].trim(); }
-      catch (e) { if (pane.isConnected) text.textContent = "Scripture is unavailable right now. Your saved reference and reflections are safe. " + e.message; }
-    };
-    pane.append(button("Reload Scripture", load, true));
-    // Queue until this panel has been attached to the current screen.
-    Promise.resolve().then(load); return pane;
-  }
-  async function lookup(reference) {
-    if (passageCache?.reference === reference) return passageCache.result;
-    const epoch = generation;
-    const response = await fetch("/api/esv?guided=1&q=" + encodeURIComponent(reference), { cache: "no-store", signal: AbortSignal.timeout(15000) });
-    const result = await response.json().catch(() => ({}));
-    if (epoch !== generation) throw new Error("The signed-in account changed.");
-    if (!response.ok || !result.passages?.[0]) throw new Error(result.error || "Please check the book, chapter, and verses, then try again.");
-    passageCache = { reference, result }; return result;
-  }
-  function scripturePicker() {
-    const d = current.data, target = current, wrap = node("div", undefined, "journey-field");
-    const bookLabel = node("label", "Book"), book = node("select"); book.id = "journey-book"; bookLabel.htmlFor = book.id;
-    const empty = node("option", "Choose a book"); empty.value = ""; book.append(empty);
-    for (const [name] of books) { const o = node("option", name); o.value = name; book.append(o); }
-    book.value = d.scriptureBook;
-    const chapterLabel = node("label", "Chapter"), chapter = node("select"); chapter.id = "journey-chapter"; chapterLabel.htmlFor = chapter.id;
-    const fillChapters = () => {
-      chapter.replaceChildren(); const empty = node("option", "Choose a chapter"); empty.value = ""; chapter.append(empty);
-      const count = books.find(([name]) => name === book.value)?.[1] || 0;
-      for (let i=1; i<=count; i++) { const o = node("option", String(i)); o.value = String(i); chapter.append(o); }
-      chapter.value = d.scriptureChapter; chapter.disabled = !count;
-    }; fillChapters();
-    const verseLabel = node("label", "Verse or verse range"), verses = node("input"); verses.type = "text"; verses.id = "journey-verses"; verseLabel.htmlFor = verses.id; verses.placeholder = "For example, 6–7"; verses.maxLength = 12; verses.value = d.scriptureVerses;
-    const hint = node("p", "Choose a short passage of up to 20 verses in one chapter, then select Look up Scripture. For short books, choose a smaller passage.", "journey-muted"); hint.id = "journey-verse-hint"; verses.setAttribute("aria-describedby", hint.id);
-    book.onchange = () => { d.scriptureBook = book.value; d.scriptureChapter = ""; fillChapters(); changed(); };
-    chapter.onchange = () => { d.scriptureChapter = chapter.value; changed(); };
-    verses.oninput = () => { d.scriptureVerses = verses.value; changed(); };
-    wrap.append(bookLabel, book, chapterLabel, chapter, verseLabel, verses, hint, button("Look up Scripture", async () => {
-      const range = verses.value.trim().replace(/[–—]/g, "-");
-      if (!book.value || !chapter.value || !/^\d{1,3}(-\d{1,3})?$/.test(range)) throw new Error("Choose a book, chapter, and verse or verse range, such as 6–7.");
-      const start = Number(range.split("-")[0]), end = Number(range.split("-")[1] || start);
-      if (start < 1 || end < start || end - start >= 20) throw new Error("Choose a passage of 1 to 20 verses in order.");
-      const reference = book.value + " " + chapter.value + ":" + range;
-      const selection = [d.scriptureBook, d.scriptureChapter, d.scriptureVerses].join("|");
-      status("Looking up Scripture…"); const result = await lookup(reference);
-      if (current !== target || screen !== "guide" || current.data.step !== 3 || selection !== [d.scriptureBook, d.scriptureChapter, d.scriptureVerses].join("|")) return;
-      d.scriptureReference = result.canonical || reference;
-      passageCache = {reference: d.scriptureReference, result}; changed(); await save(); render();
-    }, true)); return wrap;
-  }
   function render() {
-    if (!current) return;
     const d = current.data;
-    if (screen === "review") return review();
-    if (screen === "answer") return renderAnswer();
-    screen = "guide";
-    shell(d.step === 0 ? "A name for this prayer" : titles[d.step-1], d.step === 0 ? "Give this prayer a short name so you can easily return to it later." : descriptions[d.step-1]);
-    if (d.step === 0) root.append(textField("title", "A name for this prayer", "text"), scheduleFields());
-    else {
-      const progress = node("progress"); progress.max = 6; progress.value = d.step; progress.setAttribute("aria-label", "Stage " + d.step + " of 6");
-      root.append(node("p", "Stage " + d.step + " of 6", "journey-muted"), progress);
-    }
+    root.replaceChildren();
+    root.append(button("My Prayer Journeys", list, true), node("p", d.step <= 3 ? "God Communicates Truth to Me" : "I Communicate Faith to God", "journey-phase"));
+    const progress = node("progress"); progress.max = 6; progress.value = d.step;
+    progress.setAttribute("aria-label", "Step " + d.step + " of 6");
+    root.append(node("p", "Step " + d.step + " of 6", "journey-muted"), progress, heading(titles[d.step - 1]), statusNode());
+    status(dirty() ? "Unsaved changes…" : "Saved to your account");
+    root.append(scheduleFields());
+    if (d.step === 4) root.append(node("p", "Having reflected on God's truth, take time now to respond in faith.", "purpose-banner"));
     if (d.step === 1) {
-      root.append(textField("problem", "What's weighing on your heart right now?"));
-      const set = node("fieldset", undefined, "journey-field"); set.append(node("legend", "How can my prayer glorify God?"));
-      const other = textField("glorifyOther", "Your own response"); other.hidden = !d.possibleUses.includes("other");
+      root.append(textField("title", "A name for this prayer (optional)", "text"), textField("problem", "What problem am I facing?"));
+      const set = node("fieldset", undefined, "journey-field");
+      set.append(node("legend", "How could God possibly use my problem? (Check all that apply.)"));
       for (const [value, text] of choices) {
-        const label = node("label", undefined, "journey-check"), input = node("input"); input.type = "checkbox"; input.checked = d.possibleUses.includes(value);
-        input.onchange = () => { d.possibleUses = input.checked ? [...d.possibleUses, value] : d.possibleUses.filter(v => v !== value); other.hidden = !d.possibleUses.includes("other"); changed(); };
+        const label = node("label", undefined, "journey-check"), input = node("input");
+        input.type = "checkbox"; input.checked = d.possibleUses.includes(value);
+        input.onchange = () => { d.possibleUses = input.checked ? [...d.possibleUses, value] : d.possibleUses.filter(v => v !== value); changed(); };
         label.append(input, document.createTextNode(text)); set.append(label);
       }
-      root.append(set, other);
+      root.append(set, textField("questionToGod", "Rewrite the problem in the form of a question to God."), yesNo("abiding", "Am I abiding in Christ and committed to His will for my life?"));
     }
-    if (d.step === 2) root.append(textField("surrender", "What would it look like to trust God's will in this situation?"));
-    if (d.step === 3) root.append(scripturePicker(), scripturePanel(d.scriptureReference), textField("scriptureApplication", "What does this Scripture reveal about God, your situation, or how you should respond?"));
-    if (d.step === 4) root.append(textField("specificRequest", "What are you asking God to do?"));
-    if (d.step === 5) root.append(textField("belief", "What truth about God's character or promises will you trust while you wait?"));
-    if (d.step === 6) root.append(textField("plannedActions", "Is there something Scripture is calling you to do now?"), textField("submittedDate", "Date committed to prayer", "date"));
+    if (d.step === 2) root.append(node("p", "Ask yourself:"), yesNo("godFirst", "Have I brought my problem to God first?"), yesNo("inWord", "Am I systematically abiding in His Word?"), yesNo("willingToWait", "Am I willing to wait for His solution?"));
+    if (d.step === 3) root.append(yesNo("spiritLeading", "Am I allowing the Holy Spirit to fill me, to lead me to a Scripture, and to apply it to my problem?"), textField("scripture", "What is the Scripture?"), textField("scriptureApplication", "How do I think this Scripture applies to my problem?"));
+    if (d.step === 4) root.append(textField("specificRequest", "What is my specific request?"));
+    if (d.step === 5) root.append(textField("belief", "What do I believe that God will do about my problem?"), yesNo("promiseAccepted", "Do I accept God's promise as a God-revealed certainty?"));
+    if (d.step === 6) {
+      root.append(textField("plannedActions", "What action(s) will I take, based on this Word from God?"), textField("submittedDate", "Date submitted to God", "date"), node("h3", "Return later to reflect", "serif"), node("p", "You can leave these questions blank until you are ready to record an answer.", "journey-muted"), textField("godActions", "What action(s) did God take in answer to my prayer of faith?"), textField("nextActions", "What else do I need to do?"), textField("answeredDate", "Date answered", "date"));
+      const wrap = node("div", undefined, "journey-field"), label = node("label", "Journey status"), select = node("select");
+      label.htmlFor = "journey-state"; select.id = "journey-state";
+      for (const [value, text] of Object.entries(labels)) { const option = node("option", text); option.value = value; select.append(option); }
+      select.value = d.status;
+      select.onchange = () => { d.status = select.value; changed(); };
+      wrap.append(label, select); root.append(wrap);
+    }
     const actions = node("div", undefined, "journey-actions");
-    actions.append(button("Back", d.step === 0 ? list : () => move(-1), true), button("Save now", save, true), button(d.step === 6 ? "Save Prayer Journey" : "Continue", d.step === 6 ? complete : () => move(1)));
-    root.append(actions, node("p", "You may leave reflections open and return to them later. Wait for “Saved to your account” before closing.", "journey-muted")); focusHeading();
+    const back = button("Back", () => move(-1), true); back.disabled = d.step === 1;
+    actions.append(back, button("Save now", save, true), button(d.step === 6 ? "Save & Close" : "Continue", d.step === 6 ? list : () => move(1)));
+    root.append(actions, node("p", "Wait for “Saved to your account” before closing. If a save fails, keep this page open and retry.", "journey-muted"));
+    focusHeading();
   }
   async function move(delta) {
-    if (current.data.step === 0 && delta > 0 && !current.data.title.trim()) { root.querySelector("#journey-title")?.focus(); throw new Error("Give this prayer a name so you can find it later."); }
-    await save(); current.data.step += delta;
-    if (current.data.step === 6 && !current.data.submittedDate) current.data.submittedDate = today();
-    changed(); render(); await save();
-  }
-  async function complete() {
-    const d = current.data;
-    if (!d.title.trim() || !d.submittedDate) throw new Error("Add a prayer name and date committed to prayer before finishing.");
-    await save(); d.status = d.status === "answered" ? "answered" : "praying"; d.view = "review"; changed(); await save(); screen = "review";
-    shell("Your prayer journey is saved", "Keep bringing this prayer before God. You can return to Scripture, continue praying, and record what God teaches you along the way.");
-    root.append(button("Continue Praying", review)); focusHeading();
-  }
-  function review() {
-    screen = "review"; const d = current.data;
-    shell(d.title || "Prayer Journey", labels[d.status]);
-    if (d.scriptureReference) root.append(scripturePanel(d.scriptureReference));
-    const glorify = choices.filter(([key]) => d.possibleUses.includes(key)).map(([key, label]) => key === "other" ? d.glorifyOther || label : label).join("\n");
-    for (const [label, value] of [["What's on your heart", d.problem], ["Glorifying God", glorify], ["Surrendering the outcome", d.surrender], ["Scripture reflection", d.scriptureApplication], ["Your specific prayer", d.specificRequest], ["Truth you are trusting", d.belief], ["Walking in obedience", d.plannedActions], ["Date committed to prayer", d.submittedDate]]) root.append(reflection(label, value));
-    if (d.legacy) {
-      const earlier = node("details", undefined, "journey-reflection"); earlier.append(node("summary", "Earlier journey notes"));
-      for (const [key, label] of [["scripture", "Earlier Scripture notes"], ["questionToGod", "Earlier prayer reflection"], ["abiding", "Abiding"], ["godFirst", "Turning to God"], ["inWord", "Time in the Word"], ["willingToWait", "Waiting"], ["spiritLeading", "Seeking the Spirit's leading"], ["promiseAccepted", "Earlier faith response"]]) if (d[key]) earlier.append(reflection(label, d[key]));
-      root.append(earlier);
-    }
-    if (d.status === "answered") {
-      root.append(node("h3", "God Answered", "serif"));
-      for (const [label, value] of [["How God answered", d.godActions], ["What God taught you", d.lessons], ["Your next step", d.nextActions], ["Date answered", d.answeredDate]]) root.append(reflection(label, value));
-    }
-    root.append(scheduleFields(), button("Save now", save, true));
-    const actions = node("div", undefined, "journey-actions");
-    actions.append(button("Edit Journey", async () => { await save(); d.step = 0; d.view = "guide"; screen = "guide"; changed(); await save(); render(); }, true));
-    actions.append(button(d.status === "answered" ? "Edit Answer Reflection" : "Record an Answer", answer)); root.append(actions); focusHeading();
-  }
-  async function answer() {
-    await save(); const d = current.data; d.view = "answer"; if (!d.answeredDate) d.answeredDate = today();
-    screen = "answer"; changed(); renderAnswer(); await save();
-  }
-  function renderAnswer() {
-    shell("God Answered", "Take time to remember what God has done and what He has taught you through this prayer.");
-    root.append(textField("godActions", "How did God answer this prayer?"), textField("lessons", "What has God taught you through this journey?"), textField("nextActions", "Is there a next step God is calling you to take?"), textField("answeredDate", "Date answered", "date"));
-    const actions = node("div", undefined, "journey-actions");
-    actions.append(button("Back", async () => { await save(); current.data.view = "review"; changed(); await save(); review(); }, true), button("Save now", save, true), button("Save Answer", async () => {
-      const d = current.data;
-      if (!d.godActions.trim() || !d.answeredDate) throw new Error("Add how God answered and the date answered. Other reflections can be left open.");
-      await save(); d.status = "answered"; d.view = "review"; changed(); await save(); review();
-    })); root.append(actions); focusHeading();
+    await save();
+    current.data.step += delta; changed(); render();
+    await save();
   }
   function reset() {
-    generation++; clearTimeout(timer); token = null; current = null; journeys = []; passageCache = null; screen = "home"; publish();
+    generation++; clearTimeout(timer); token = null; current = null; journeys = []; publish();
     revision = savedRevision = 0; root?.replaceChildren();
   }
   async function start(session, options = {}) {
     categories = options.categories || (() => []); onUpdate = options.onUpdate || (() => {});
     reset(); token = session; root = document.getElementById("journeyRoot");
-    root.replaceChildren(heading("Guided Prayer"), statusNode(), button("Load Guided Prayer", home));
-    try { await home(); } catch (e) { status(e.message, true); }
+    root.replaceChildren(heading("Guide to Praying in Faith"), statusNode(), button("Load My Prayer Journeys", list));
+    try { await list(); } catch (e) { status(e.message, true); }
   }
   window.addEventListener("beforeunload", e => { if (dirty() || pending) { e.preventDefault(); e.returnValue = ""; } });
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") save().catch(() => {}); });
