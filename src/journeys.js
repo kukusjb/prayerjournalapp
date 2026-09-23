@@ -2,7 +2,7 @@ import { authenticate, json } from "./utils.js";
 
 const textFields = ["title", "problem", "questionToGod", "scripture", "scriptureApplication", "specificRequest", "belief", "plannedActions", "godActions", "nextActions"];
 const yesNoFields = ["abiding", "godFirst", "inWord", "willingToWait", "spiritLeading", "promiseAccepted"];
-const uses = ["power", "blessing", "character", "prayer"];
+const uses = ["power", "blessing", "character", "prayer", "serve", "other"];
 function validDate(value) {
   return value === "" || (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) &&
     Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value);
@@ -18,11 +18,11 @@ export function validateJourney(input) {
     if (!["", "yes", "no"].includes(input[key])) throw new Error("Choose Yes or No, or leave the question unanswered.");
     data[key] = input[key];
   }
-  if (!Array.isArray(input.possibleUses) || input.possibleUses.length > 4 || input.possibleUses.some(v => !uses.includes(v))) throw new Error("Invalid selections.");
+  if (!Array.isArray(input.possibleUses) || input.possibleUses.length > 6 || input.possibleUses.some(v => !uses.includes(v))) throw new Error("Invalid selections.");
   data.possibleUses = [...new Set(input.possibleUses)];
-  if (!Number.isInteger(input.step) || input.step < 1 || input.step > 6) throw new Error("Invalid step.");
+  if (!Number.isInteger(input.step) || input.step < (input.formatVersion === 2 ? 0 : 1) || input.step > 6) throw new Error("Invalid step.");
   data.step = input.step;
-  if (!["in_prayer", "waiting", "answered"].includes(input.status)) throw new Error("Invalid status.");
+  if (!(input.formatVersion === 2 ? ["in_progress", "praying", "answered"] : ["in_prayer", "waiting", "answered"]).includes(input.status)) throw new Error("Invalid status.");
   data.status = input.status;
   data.frequency = input.frequency === undefined ? "daily" : input.frequency;
   if (!["daily", "weekly", "none"].includes(data.frequency)) throw new Error("Choose Daily, Weekly, or Guide only.");
@@ -34,10 +34,25 @@ export function validateJourney(input) {
     if (!validDate(input[key])) throw new Error("Enter a valid date.");
     data[key] = input[key];
   }
-  if (data.status !== "in_prayer" && !data.submittedDate) throw new Error("Enter the date submitted to God.");
+  if (!["in_prayer", "in_progress"].includes(data.status) && !data.submittedDate) throw new Error("Enter the date committed to prayer.");
   if (data.status === "answered" && !data.answeredDate) throw new Error("Enter the date answered.");
-  if (data.answeredDate && !data.submittedDate) throw new Error("Enter the date submitted to God first.");
+  if (data.answeredDate && !data.submittedDate) throw new Error("Enter the date committed to prayer first.");
   if (data.answeredDate && data.answeredDate < data.submittedDate) throw new Error("The answered date cannot precede the submitted date.");
+  if (input.formatVersion !== undefined && input.formatVersion !== 2) throw new Error("Unsupported journey format.");
+  if (input.formatVersion === 2) {
+    data.formatVersion = 2;
+    for (const key of ["surrender", "glorifyOther", "lessons", "scriptureReference", "scriptureBook", "scriptureChapter", "scriptureVerses"]) {
+      const value = input[key] === undefined ? "" : input[key];
+      if (typeof value !== "string" || value.length > (key.startsWith("scripture") ? 160 : 10000)) throw new Error("Please shorten or check your answers.");
+      data[key] = value;
+    }
+    if (!["guide", "review", "answer"].includes(input.view)) throw new Error("Invalid journey screen.");
+    data.view = input.view;
+    if (input.legacy !== undefined && typeof input.legacy !== "boolean") throw new Error("Invalid journey format.");
+    data.legacy = input.legacy === true;
+    if (data.status !== "in_progress" && !data.title.trim()) throw new Error("Give this prayer a name first.");
+    if (data.status === "answered" && !data.legacy && !data.godActions.trim()) throw new Error("Write a reflection about the answer before saving it as answered.");
+  }
   return data;
 }
 function privateJson(body, status = 200) {
@@ -81,6 +96,10 @@ export async function handleJourneys(request, env) {
     return row ? privateJson({ journey: unpack(row) }, 201) : privateJson({ error: "Could not create journey." }, 409);
   }
   if (!Number.isInteger(body.version) || body.version < 1) return privateJson({ error: "Missing journey version." }, 400);
+  const existing = await env.DB.prepare("SELECT * FROM prayer_journeys WHERE id = ? AND user_id = ?").bind(id, userId).first();
+  if (existing && JSON.parse(existing.data).formatVersion === 2 && data.formatVersion !== 2) {
+    return privateJson({ error: "Guided Prayer has been updated. Reload the app before editing this journey." }, 409);
+  }
   const row = await env.DB.prepare("UPDATE prayer_journeys SET data = ?, updated_at = ?, version = version + 1 WHERE id = ? AND user_id = ? AND version = ? RETURNING *")
     .bind(JSON.stringify(data), now, id, userId, body.version).first();
   if (row) return privateJson({ journey: unpack(row) });
