@@ -1,4 +1,5 @@
 import { handleEsv } from "./esv.js";
+import { handleScriptureHelp } from "./scripture-help.js";
 import { handleRequestLink } from "./auth-request-link.js";
 import { handleVerify } from "./auth-verify.js";
 import { handleJournalGet, handleJournalPost } from "./journal.js";
@@ -14,6 +15,7 @@ export default {
     const method = request.method;
 
     try {
+      if (path === "/api/scripture-help") return await handleScriptureHelp(request, env);
       if (path === "/api/journeys" || path.startsWith("/api/journeys/")) {
         return await handleJourneys(request, env);
       }
