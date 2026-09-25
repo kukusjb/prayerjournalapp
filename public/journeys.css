@@ -48,3 +48,10 @@
 #journeyRoot details summary { padding: 12px 0; cursor: pointer; }
 #journeyRoot .journey-actions button { white-space: normal; min-width: 80px; }
 #journeyRoot > button { margin: 8px 8px 8px 0; }
+/* Optional Scripture discovery uses the existing prayer-card palette. */
+.journey-helper { border: 1px solid var(--rule); border-radius: 16px; padding: 18px; }
+.journey-helper summary { cursor: pointer; font-weight: 600; }
+.journey-suggestion { margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.journey-suggestion h4 { font-size: 1.1rem; margin: 8px 0; }
+.journey-helper [hidden] { display: none !important; }
+

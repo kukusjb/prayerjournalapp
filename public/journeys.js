@@ -272,6 +272,51 @@ window.PrayerJourneys = (() => {
     const link = node("a", "Read on ESV.org"); link.href = "https://www.esv.org/" + encodeURIComponent(reference) + "/"; link.target = "_blank"; link.rel = "noopener noreferrer";
     pane.append(link, button("Reload Scripture", () => load(true), true)); Promise.resolve().then(() => load()); return pane;
   }
+  function scriptureHelp() {
+    const target=current, epoch=generation, section=node("details",undefined,"journey-field journey-helper");
+    section.append(node("summary","Need help finding Scripture?"));
+    section.append(node("p","Share a little about what you’re praying through, and I can suggest passages to read and reflect on."));
+    const label=node("label","What would you like help finding Scripture for?"), input=node("textarea");
+    label.htmlFor="scripture-help-topic"; input.id=label.htmlFor; input.rows=4; input.maxLength=1000;
+    input.placeholder="I’m praying for a brother in Christ facing health challenges.";
+    const notice=node("p","When you select Find Scripture, only this text is sent to Google Gemini. Leave out names and private medical details. This search is not saved in your journey.","journey-muted");
+    notice.id="scripture-help-notice"; input.setAttribute("aria-describedby",notice.id);
+    const info=node("p","","journey-status"), results=node("div"); info.setAttribute("role","status");
+    const find=button("Find Scripture",async()=>{
+      if(input.value.trim().length<5){info.textContent="Please describe your topic in at least five characters.";input.focus();return;}
+      info.textContent="Finding passages to reflect on…";results.replaceChildren();
+      try {
+        const response=await fetch("/api/scripture-help",{method:"POST",cache:"no-store",signal:AbortSignal.timeout(25000),headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({topic:input.value.trim()})});
+        const data=await response.json();
+        if(epoch!==generation || current!==target || !section.isConnected)return;
+        if(!response.ok)throw new Error(data.error||"Suggestions are unavailable. Please use the passage picker below.");
+        if(!Array.isArray(data.suggestions))throw new Error("Please reload the page and try again.");
+        info.textContent="AI suggestions can be mistaken. Read each passage in context as you reflect.";
+        for(const suggestion of data.suggestions){
+          const card=node("div",undefined,"journey-suggestion"), message=node("p");message.setAttribute("role","status");
+          card.append(node("h4",suggestion.reference,"serif"),node("p",suggestion.reason));
+          let passage=null;
+          const use=button("Use This Scripture",async()=>{
+            if(!passage)return;
+            const parts=suggestion.reference.match(/^(.+) (\d+):(\d+)(?:-(\d+))?$/);
+            if(!parts || !books.some(([name])=>name===parts[1])){message.textContent="Please select this reference with the passage picker below.";return;}
+            if(epoch!==generation || current!==target)return;
+            Object.assign(target.data,{scriptureReference:passage.canonical||suggestion.reference,scriptureBook:parts[1],scriptureChapter:parts[2],scriptureStart:parts[3],scriptureEnd:parts[4]||""});
+            passageCache={reference:target.data.scriptureReference,result:passage};changed();await save();render();
+          });use.hidden=true;
+          card.append(button("Read Passage",async()=>{
+            message.textContent="Loading ESV Scripture…";
+            try{
+              const loaded=await fetchPassage(suggestion.reference);
+              if(epoch!==generation || current!==target || !card.isConnected)return;
+              passage=loaded;message.textContent=loaded.passages[0].trim();message.className="journey-passage";use.hidden=false;
+            }catch{if(card.isConnected)message.textContent="We couldn't verify this passage through ESV. Try again or choose a passage below.";}
+          },true),message,use);results.append(card);
+        }
+      }catch(e){if(epoch===generation && section.isConnected)info.textContent=e.name==="TimeoutError"?"Suggestions took too long. Please try again or use the passage picker below.":e.message;}
+    });
+    section.append(label,input,notice,find,info,results);return section;
+  }
   function scripturePicker() {
     const d = current.data, target = current, wrap = node("div", undefined, "journey-field");
     wrap.append(node("h3", "Find a Scripture", "serif"));
@@ -348,7 +393,7 @@ window.PrayerJourneys = (() => {
       root.append(set,other);
     }
     if (d.step === 3) root.append(textField("surrender", "What would it look like to trust God's will in this situation?"));
-    if (d.step === 4) root.append(scripturePicker(), scripturePanel(d.scriptureReference), textField("scriptureApplication", "What does this Scripture reveal about God, your situation, or how you should respond?"));
+    if (d.step === 4) root.append(scriptureHelp(), scripturePicker(), scripturePanel(d.scriptureReference), textField("scriptureApplication", "What does this Scripture reveal about God, your situation, or how you should respond?"));
     if (d.step === 5) root.append(textField("specificRequest", "What are you asking God to do?"));
     if (d.step === 6) root.append(textField("belief", "What truth about God's character or promises will you trust while you wait?"));
     if (d.step === 7) root.append(textField("plannedActions", "Is there something Scripture is calling you to do now?"),textField("submittedDate", "Date committed to prayer", "date"));
