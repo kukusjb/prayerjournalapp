@@ -2,6 +2,7 @@
   "name": "prayerjournalapp",
   "compatibility_date": "2026-09-11",
   "main": "src/index.js",
+  "ratelimits": [{ "name": "SCRIPTURE_HELP_LIMITER", "namespace_id": "20260925", "simple": { "limit": 5, "period": 60 } }],
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
