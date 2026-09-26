@@ -16,7 +16,8 @@ export async function handleScriptureHelp(request, env) {
   } catch { return reply({error:"Please enter a prayer topic."},400); }
   if (typeof topic !== "string" || topic.trim().length < 5 || topic.length > 1000) return reply({error:"Enter a prayer topic of 5–1,000 characters."},400);
   const key = await getSecret(env.GEMINI_API_KEY);
-  if (!key || !env.SCRIPTURE_HELP_LIMITER) return reply({error:"Scripture suggestions are not set up yet. You can still choose a passage below."},503);
+  if (!key) return reply({error:"Scripture suggestions need the Gemini key added to the active app deployment. You can still choose a passage below.",code:"GEMINI_KEY_MISSING"},503);
+  if (!env.SCRIPTURE_HELP_LIMITER) return reply({error:"Scripture suggestions need the request-limit configuration deployed. You can still choose a passage below.",code:"SCRIPTURE_LIMITER_MISSING"},503);
   const limit = await env.SCRIPTURE_HELP_LIMITER.limit({key:String(owner)});
   if (!limit.success) return reply({error:"Please wait a minute before finding more Scripture."},429);
   try {
