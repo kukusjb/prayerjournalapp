@@ -1,25 +1,20 @@
 {
-  "name": "prayerjournalapp",
-  "compatibility_date": "2026-09-11",
-  "main": "src/index.js",
-  "ratelimits": [{ "name": "SCRIPTURE_HELP_LIMITER", "namespace_id": "20260925", "simple": { "limit": 5, "period": 60 } }],
-  "assets": {
-    "directory": "./public",
-    "binding": "ASSETS",
-    "run_worker_first": ["/api/*"]
-  },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "prayerjournal-db",
-      "database_id": "29042503-4c22-44f4-bab7-a83fa7f49420"
-    }
-  ],
+  // ...
   "secrets_store_secrets": [
+    {
+      "binding": "CONTACT_EMAIL",
+      "store_id": "5b4b2ecc4eed4f52b07e21f54bb25f4a",
+      "secret_name": "CONTACT_EMAIL"
+    },
     {
       "binding": "ESV_API_KEY",
       "store_id": "5b4b2ecc4eed4f52b07e21f54bb25f4a",
       "secret_name": "ESV_API_KEY"
+    },
+    {
+      "binding": "GEMINI_API_KEY",
+      "store_id": "5b4b2ecc4eed4f52b07e21f54bb25f4a",
+      "secret_name": "GEMINI_API_KEY"
     },
     {
       "binding": "RESEND_API_KEY",
@@ -27,19 +22,31 @@
       "secret_name": "RESEND_API_KEY"
     },
     {
-      "binding": "CONTACT_EMAIL",
+      "binding": "RESEND_FROM_ADDRESS",
       "store_id": "5b4b2ecc4eed4f52b07e21f54bb25f4a",
-      "secret_name": "CONTACT_EMAIL"
+      "secret_name": "RESEND_FROM_ADDRESS"
     },
     {
       "binding": "TURNSTILE_SECRET_KEY",
       "store_id": "5b4b2ecc4eed4f52b07e21f54bb25f4a",
       "secret_name": "TURNSTILE_SECRET_KEY"
-    },
-    {
-      "binding": "RESEND_FROM_ADDRESS",
-      "store_id": "5b4b2ecc4eed4f52b07e21f54bb25f4a",
-      "secret_name": "RESEND_FROM_ADDRESS"
     }
-  ]
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_id": "29042503-4c22-44f4-bab7-a83fa7f49420"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "SCRIPTURE_HELP_LIMITER",
+      "namespace_id": "20260925",
+      "simple": {
+        "limit": 5,
+        "period": 60
+      }
+    }
+  ],
+  // ...
 }
