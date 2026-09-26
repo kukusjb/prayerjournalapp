@@ -48,7 +48,7 @@ export async function handleScriptureHelp(request, env) {
   const limit = await env.SCRIPTURE_HELP_LIMITER.limit({key:String(owner)});
   if (!limit.success) return reply({error:"Please wait a minute before finding more Scripture."},429);
   try {
-    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent", {
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent", {
       method:"POST", signal:AbortSignal.timeout(20000),
       headers:{"Content-Type":"application/json","x-goog-api-key":key},
       body:JSON.stringify({systemInstruction:{parts:[{text:instructions}]},contents:[{role:"user",parts:[{text:topic.trim()}]}],generationConfig:{maxOutputTokens:1200,responseMimeType:"application/json",responseSchema:{type:"OBJECT",properties:{suggestions:{type:"ARRAY",minItems:3,maxItems:3,items:{type:"OBJECT",properties:{reference:{type:"STRING"},reason:{type:"STRING"}},required:["reference","reason"]}}},required:["suggestions"]}}})
@@ -70,3 +70,5 @@ export async function handleScriptureHelp(request, env) {
     return reply({suggestions});
   } catch { return reply({error:"We couldn't find suggestions just now. Please try again or choose a passage below."},502); }
 }
+
+
