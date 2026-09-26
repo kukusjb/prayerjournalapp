@@ -4,6 +4,33 @@ const instructions = `Suggest exactly three distinct Bible passages relevant to 
 function reply(body, code = 200) {
   const response = json(body, code); response.headers.set("Cache-Control", "no-store"); return response;
 }
+// Never forward provider messages: they can contain request or credential details.
+export function providerFailure(status, body) {
+  const details = Array.isArray(body?.error?.details) ? body.error.details : [];
+  const reasons = details.map(d => d?.reason);
+  const message = typeof body?.error?.message === "string" ? body.error.message : "";
+  let code = "GOOGLE_REQUEST_FAILED", explanation = "Google could not complete the Scripture request. Please try again later.";
+  if (reasons.includes("API_KEY_INVALID") || /API key not valid|API_KEY_INVALID|API key expired/i.test(message)) {
+    code="GOOGLE_KEY_INVALID"; explanation="Google did not accept the API key. The app owner needs to check or replace the runtime Gemini secret.";
+  } else if (/leaked/i.test(message)) {
+    code="GOOGLE_KEY_BLOCKED"; explanation="Google has blocked this API key. The app owner needs to replace it with a new key.";
+  } else if (reasons.includes("SERVICE_DISABLED")) {
+    code="GOOGLE_API_DISABLED"; explanation="The Gemini API is disabled for this Google project. The app owner needs to enable the Generative Language API.";
+  } else if (/location.*not supported|region.*not supported|not available in your country/i.test(message)) {
+    code="GOOGLE_REGION_UNSUPPORTED"; explanation="Google does not support this request's location. The app owner needs to review Gemini regional availability.";
+  } else if (status===402 || /billing|prepay|payment/i.test(message)) {
+    code="GOOGLE_BILLING"; explanation="Google requires attention to this project's billing or available credits.";
+  } else if (status===401 || status===403) {
+    code="GOOGLE_ACCESS_DENIED"; explanation="Google denied API access. The app owner needs to check the key's project, API permissions, and application restrictions.";
+  } else if (status===404) {
+    code="GOOGLE_MODEL_UNAVAILABLE"; explanation="Google could not find the configured Gemini model for this request. The app's model configuration needs checking.";
+  } else if (status===429) {
+    code="GOOGLE_QUOTA"; explanation="Google's request quota is exhausted. Please try later; the app owner can check the project's quota and billing.";
+  } else if (status===400) {
+    code="GOOGLE_REQUEST_INVALID"; explanation="Google rejected the request format or project setup. The app developer needs to check this request.";
+  }
+  return {error:explanation+" ("+code+"; HTTP "+status+") You can still choose a passage below.",code};
+}
 export async function handleScriptureHelp(request, env) {
   if (request.method !== "POST") return reply({error:"Method not allowed."},405);
   const owner = await authenticate(request, env);
@@ -26,7 +53,7 @@ export async function handleScriptureHelp(request, env) {
       headers:{"Content-Type":"application/json","x-goog-api-key":key},
       body:JSON.stringify({systemInstruction:{parts:[{text:instructions}]},contents:[{role:"user",parts:[{text:topic.trim()}]}],generationConfig:{maxOutputTokens:1200,responseMimeType:"application/json",responseSchema:{type:"OBJECT",properties:{suggestions:{type:"ARRAY",minItems:3,maxItems:3,items:{type:"OBJECT",properties:{reference:{type:"STRING"},reason:{type:"STRING"}},required:["reference","reason"]}}},required:["suggestions"]}}})
     });
-    if(!response.ok) return reply({error:response.status===429?"Scripture suggestions are busy. Please try again later or use the passage picker below.":"Scripture suggestions are unavailable. Please try again later or use the passage picker below."},503);
+    if(!response.ok) return reply(providerFailure(response.status, await response.json().catch(()=>null)),503);
     const result = await response.json();
     if(result.candidates?.[0]?.finishReason !== "STOP") throw new Error("Incomplete response");
     const parsed = JSON.parse(result.candidates[0].content.parts.map(p=>p.text||"").join(""));
