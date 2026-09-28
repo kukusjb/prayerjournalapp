@@ -1505,7 +1505,15 @@ function renderAnsweredList(){
   items.forEach(item=>container.appendChild(answeredRow(item)));
 }
 
+let todayRenderedDate = todayStr();
+function refreshPrayerDay(){
+  if(todayRenderedDate !== todayStr()) renderToday();
+}
+window.addEventListener("focus", refreshPrayerDay);
+document.addEventListener("visibilitychange", () => { if(!document.hidden) refreshPrayerDay(); });
+setInterval(refreshPrayerDay, 60000);
 function renderToday(){
+  todayRenderedDate = todayStr();
   const now = new Date();
   document.getElementById("todayLabel").textContent =
     now.toLocaleDateString(undefined,{weekday:"long", year:"numeric", month:"long", day:"numeric"});
@@ -1525,12 +1533,26 @@ function renderToday(){
 
   // daily
   const dailyWrap = document.getElementById("dailyList");
+  const completedOpen = dailyWrap.querySelector("details")?.open || false;
   dailyWrap.innerHTML = "";
   const dailyItems = prayerItems().filter(i=>i.frequency==="daily" && !i.answered);
+  const remainingDaily = dailyItems.filter(i=>i.lastPrayed!==todayStr());
+  const completedDaily = dailyItems.filter(i=>i.lastPrayed===todayStr());
   if(dailyItems.length===0){
     dailyWrap.appendChild(el("div",{class:"empty", text:"Add daily needs under Prayer Lists to see them here."}));
   } else {
-    dailyItems.forEach(i=>dailyWrap.appendChild(itemRow(i)));
+    remainingDaily.forEach(i=>dailyWrap.appendChild(itemRow(i)));
+    if(!remainingDaily.length) dailyWrap.appendChild(el("div",{class:"empty",text:"You've prayed through your daily prayers today."}));
+    if(completedDaily.length){
+      const completed = el("details");
+      completed.open = completedOpen;
+      const summary = el("summary",{text:"Prayed today ("+completedDaily.length+")"});
+      summary.style.cssText = "cursor:pointer;padding:12px 0;font-weight:600";
+      completed.appendChild(summary);
+      completed.appendChild(el("p",{class:"meta",text:"Uncheck Prayed today to return a prayer to your list."}));
+      completedDaily.forEach(i=>completed.appendChild(itemRow(i)));
+      dailyWrap.appendChild(completed);
+    }
   }
 
   // weekly - today's category
