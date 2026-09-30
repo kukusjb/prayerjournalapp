@@ -55,3 +55,8 @@
 .journey-suggestion h4 { font-size: 1.1rem; margin: 8px 0; }
 .journey-helper [hidden] { display: none !important; }
 
+
+/* Scripture remains distinct within the navy and gold theme. */
+#journeyRoot .journey-scripture{background:var(--primary);color:#fff;border-left:4px solid var(--gold)}
+#journeyRoot .journey-scripture a{color:#E0C879}
+#journeyRoot .journey-scripture .journey-secondary{background:#fff;color:var(--primary)}

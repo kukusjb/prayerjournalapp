@@ -7,21 +7,21 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Prayer Journal">
-<meta name="theme-color" content="#3F5B4C">
+<meta name="theme-color" content="#101D40">
 <title>Personal Prayer Journal</title>
-<link rel="stylesheet" href="/journeys.css?v=20260925-scripture-help">
+<link rel="stylesheet" href="/journeys.css?v=20260930-navy-gold">
 <script src="/journeys.js?v=20260925-scripture-help"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
   :root{
-    --paper: #F5F1E7;
-    --paper-light: #FBF9F3;
-    --ink: #24302B;
-    --ink-soft: #7A7267;
-    --rule: #E1D9C8;
-    --primary: #3F5B4C;
-    --primary-dark: #33493D;
-    --gold: #B08D4F;
+    --paper: #F8F6EF;
+    --paper-light: #FFFFFF;
+    --ink: #14213D;
+    --ink-soft: #626B7E;
+    --rule: #E3DFD3;
+    --primary: #101D40;
+    --primary-dark: #09132D;
+    --gold: #B79A4D;
     --danger: #8B4040;
   }
   * { box-sizing: border-box; }
@@ -100,7 +100,7 @@
     color: #fff;
   }
   nav.tabs button:hover:not(.active){
-    background: #D8CDB4;
+    background: #E8DDBD;
   }
 
   main{
@@ -794,6 +794,19 @@
   @media (prefers-reduced-motion: reduce){
     .toast{ transition:none; }
   }
+/* Navy, gold, and white theme. */
+header{background:var(--primary);padding:30px 20px 22px;border-top:3px solid var(--gold)}
+header h1{color:#fff}
+header .date{color:#DBCD9F}
+nav.tabs{background:var(--primary);padding-bottom:14px}
+nav.tabs button{background:transparent;color:#E7EAF1;border:1px solid #526078}
+nav.tabs button.active{background:var(--gold);color:var(--primary);border-color:var(--gold)}
+nav.tabs button:hover:not(.active){background:#253556;color:#fff}
+.verse-display{background:var(--primary);border-left:4px solid var(--gold);border-radius:12px;padding:22px}
+.verse-display .verse-text{color:#fff}
+.verse-display .verse-ref{color:#E0C879}
+.verse-display button{background:#fff;color:var(--primary)}
+a{color:var(--primary)}
 </style>
 </head>
 <body>
