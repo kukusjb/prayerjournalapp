@@ -807,6 +807,11 @@ nav.tabs button:hover:not(.active){background:#253556;color:#fff}
 .verse-display .verse-ref{color:#E0C879}
 .verse-display button{background:#fff;color:var(--primary)}
 a{color:var(--primary)}
+.answered-accordion{margin-top:28px;padding:0 16px 16px;border:1px solid var(--rule);border-top:3px solid var(--gold);border-radius:12px;background:var(--paper)}
+.answered-accordion:not([open]){padding-bottom:0}
+.answered-accordion>summary{cursor:pointer;padding:18px 0;color:var(--primary);font-size:1.08rem;font-weight:600}
+.answered-accordion>summary:focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:4px}
+.answered-count{display:inline-block;vertical-align:middle;margin-left:8px;padding:2px 9px;border-radius:999px;background:var(--primary);color:white;font:600 .75rem/1.5 "Segoe UI",sans-serif}
 </style>
 </head>
 <body>
@@ -910,11 +915,11 @@ a{color:var(--primary)}
         </div>
       </details>
 
-      <section class="block" id="section-answered">
-        <h2 class="serif">Answered prayers</h2>
-        <div class="sub">Prayers you've marked as answered, most recent first</div>
+      <details class="block answered-accordion" id="section-answered">
+        <summary><span class="serif">Answered prayers</span> <span id="answeredCount" class="answered-count">0</span></summary>
+        <div class="sub">Remember what God has done. Most recent answers appear first.</div>
         <div id="answeredList"></div>
-      </section>
+      </details>
     </div>
 
     <!-- GUIDANCE -->
@@ -1506,6 +1511,7 @@ function renderAnsweredList(){
   const items = prayerItems()
     .filter(i=>i.answered && matchesSearch(i))
     .sort((a,b)=> (b.answeredDate||"").localeCompare(a.answeredDate||""));
+  document.getElementById("answeredCount").textContent = searchTerm ? items.length + " of " + totalAnswered : String(totalAnswered);
 
   if(totalAnswered === 0 && !searchTerm){
     if(section) section.style.display = "none";
