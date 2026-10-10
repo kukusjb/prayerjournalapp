@@ -1145,7 +1145,7 @@ async function loadData(){
 async function saveData(){
   const token = getSessionToken();
   try{
-    await fetch("/api/journal", {
+    const response = await fetch("/api/journal", {
       method: "POST",
       headers: {
         "Authorization": "Bearer " + token,
@@ -1153,8 +1153,10 @@ async function saveData(){
       },
       body: JSON.stringify({ data: JSON.stringify(data) })
     });
+    return response.ok;
   }catch(e){
     console.error("Save error", e);
+    return false;
   }
 }
 
@@ -1637,13 +1639,42 @@ function simpleGoalRow(goal, arrKey){
     renderGuidance();
   });
   const name = el("span",{class:"name"+(goal.done?" done":""), text:goal.text});
+  const edit = el("button",{class:"journey-secondary",text:"Edit",attrs:{type:"button","aria-label":"Edit goal: "+goal.text}});
+  edit.addEventListener("click", ()=>{
+    const form = el("form",{attrs:{style:"width:100%"}});
+    const id = "edit-goal-"+goal.id;
+    const label = el("label",{text:arrKey==="lifeGoals"?"Edit life goal":"Edit monthly goal",attrs:{for:id}});
+    const input = el("textarea",{attrs:{id,rows:"3",required:"",style:"display:block;width:100%;box-sizing:border-box;font:inherit;padding:12px;margin:10px 0;border:1px solid var(--rule);border-radius:10px;background:var(--paper-light);color:var(--ink)"}});
+    input.value=goal.text;
+    const message=el("p",{attrs:{role:"status"}});
+    const save=el("button",{class:"journey-primary",text:"Save",attrs:{type:"submit"}});
+    const cancel=el("button",{class:"journey-secondary",text:"Cancel",attrs:{type:"button",style:"margin-left:8px"}});
+    const close=()=>{row.replaceChildren(cb,name,edit,del);edit.focus();};
+    cancel.onclick=close;
+    input.oninput=()=>input.setCustomValidity("");
+    form.onkeydown=e=>{if(e.key==="Escape"&&!save.disabled){e.preventDefault();close();}};
+    form.onsubmit=async e=>{
+      e.preventDefault();const text=input.value.trim();
+      if(!text){input.setCustomValidity("Please enter a goal.");input.reportValidity();return;}
+      const previous=goal.text;
+      save.disabled=cancel.disabled=input.disabled=true;message.textContent="Saving…";
+      goal.text=text;
+      if(await saveData()){
+        name.textContent=text;edit.setAttribute("aria-label","Edit goal: "+text);close();showToast("Goal updated.");
+      }else{
+        goal.text=previous;message.textContent="Not saved. Your edit is still here. Please try again.";
+        save.disabled=cancel.disabled=input.disabled=false;
+      }
+    };
+    form.append(label,input,save,cancel,message);row.replaceChildren(form);input.focus();
+  });
   const del = el("button",{class:"del", text:"×"});
   del.addEventListener("click", async ()=>{
     data[arrKey] = data[arrKey].filter(g=>g.id!==goal.id);
     await saveData();
     renderGuidance();
   });
-  row.appendChild(cb); row.appendChild(name); row.appendChild(del);
+  row.appendChild(cb); row.appendChild(name); row.appendChild(edit); row.appendChild(del);
   return row;
 }
 
