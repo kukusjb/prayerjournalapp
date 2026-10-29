@@ -7,19 +7,21 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Prayer Journal">
-<meta name="theme-color" content="#3F5B4C">
+<meta name="theme-color" content="#101D40">
 <title>Personal Prayer Journal</title>
+<link rel="stylesheet" href="/journeys.css?v=20260930-navy-gold">
+<script src="/journeys.js?v=20260925-scripture-help"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
   :root{
-    --paper: #F5F1E7;
-    --paper-light: #FBF9F3;
-    --ink: #24302B;
-    --ink-soft: #7A7267;
-    --rule: #E1D9C8;
-    --primary: #3F5B4C;
-    --primary-dark: #33493D;
-    --gold: #B08D4F;
+    --paper: #F8F6EF;
+    --paper-light: #FFFFFF;
+    --ink: #14213D;
+    --ink-soft: #626B7E;
+    --rule: #E3DFD3;
+    --primary: #101D40;
+    --primary-dark: #09132D;
+    --gold: #B79A4D;
     --danger: #8B4040;
   }
   * { box-sizing: border-box; }
@@ -98,7 +100,7 @@
     color: #fff;
   }
   nav.tabs button:hover:not(.active){
-    background: #D8CDB4;
+    background: #E8DDBD;
   }
 
   main{
@@ -792,6 +794,24 @@
   @media (prefers-reduced-motion: reduce){
     .toast{ transition:none; }
   }
+/* Navy, gold, and white theme. */
+header{background:var(--primary);padding:30px 20px 22px;border-top:3px solid var(--gold)}
+header h1{color:#fff}
+header .date{color:#DBCD9F}
+nav.tabs{background:var(--primary);padding-bottom:14px}
+nav.tabs button{background:transparent;color:#E7EAF1;border:1px solid #526078}
+nav.tabs button.active{background:var(--gold);color:var(--primary);border-color:var(--gold)}
+nav.tabs button:hover:not(.active){background:#253556;color:#fff}
+.verse-display{background:var(--primary);border-left:4px solid var(--gold);border-radius:12px;padding:22px}
+.verse-display .verse-text{color:#fff}
+.verse-display .verse-ref{color:#E0C879}
+.verse-display button{background:#fff;color:var(--primary)}
+a{color:var(--primary)}
+.answered-accordion{margin-top:28px;padding:0 16px 16px;border:1px solid var(--rule);border-top:3px solid var(--gold);border-radius:12px;background:var(--paper)}
+.answered-accordion:not([open]){padding-bottom:0}
+.answered-accordion>summary{cursor:pointer;padding:18px 0;color:var(--primary);font-size:1.08rem;font-weight:600}
+.answered-accordion>summary:focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:4px}
+.answered-count{display:inline-block;vertical-align:middle;margin-left:8px;padding:2px 9px;border-radius:999px;background:var(--primary);color:white;font:600 .75rem/1.5 "Segoe UI",sans-serif}
 </style>
 </head>
 <body>
@@ -827,10 +847,12 @@
   <nav class="tabs">
     <button data-tab="today" class="active">Today</button>
     <button data-tab="lists">Prayer Lists</button>
-    <button data-tab="guidance">Guidance</button>
+    <button data-tab="guidance">Discipleship</button>
+    <button data-tab="journeys">Guided Prayer</button>
   </nav>
 
   <main>
+    <div id="panel-journeys" class="panel"><div id="journeyRoot"></div></div>
     <!-- TODAY -->
     <div class="panel active" id="panel-today">
       <div id="todayGreeting" class="today-greeting"></div>
@@ -893,11 +915,11 @@
         </div>
       </details>
 
-      <section class="block" id="section-answered">
-        <h2 class="serif">Answered prayers</h2>
-        <div class="sub">Prayers you've marked as answered, most recent first</div>
+      <details class="block answered-accordion" id="section-answered">
+        <summary><span class="serif">Answered prayers</span> <span id="answeredCount" class="answered-count">0</span></summary>
+        <div class="sub">Remember what God has done. Most recent answers appear first.</div>
         <div id="answeredList"></div>
-      </section>
+      </details>
     </div>
 
     <!-- GUIDANCE -->
@@ -1128,7 +1150,7 @@ async function loadData(){
 async function saveData(){
   const token = getSessionToken();
   try{
-    await fetch("/api/journal", {
+    const response = await fetch("/api/journal", {
       method: "POST",
       headers: {
         "Authorization": "Bearer " + token,
@@ -1136,8 +1158,10 @@ async function saveData(){
       },
       body: JSON.stringify({ data: JSON.stringify(data) })
     });
+    return response.ok;
   }catch(e){
     console.error("Save error", e);
+    return false;
   }
 }
 
@@ -1241,7 +1265,7 @@ function openEditPrayerSheet(item){
   document.getElementById("newItemPerson").value = item.person || "";
   document.getElementById("newItemNeed").value = item.need || "";
   const catSelect = document.getElementById("newItemCategory");
-  // make sure the item's current category is selectable even if it was removed from the list
+  // keep the item's current category selectable even if it was removed from the list
   if(item.category && ![...catSelect.options].some(o=>o.value===item.category)){
     const opt = document.createElement("option");
     opt.value = item.category; opt.textContent = item.category;
@@ -1311,7 +1335,40 @@ function matchesSearch(item){
   return hay.includes(searchTerm);
 }
 
+function prayerItems(){ return data.items.concat(window.PrayerJourneys.items()); }
+async function openPrayerJourney(id){
+  try {
+    await window.PrayerJourneys.open(id);
+    document.querySelector('nav.tabs button[data-tab="journeys"]').click();
+  } catch(e) { showToast(e.message); }
+}
+function journeyRow(item){
+  const row = el("div",{class:"item-row"});
+  row.appendChild(el("div",{class:"person",text:item.person}));
+  if(item.need) row.appendChild(el("div",{class:"need",text:item.need}));
+  row.appendChild(el("span",{class:"tag",text:"Prayer Journey · " + item.category}));
+  const actions = el("div",{class:"item-actions"});
+  if(!item.answered){
+    const label = el("label",{class:"prayed-label"});
+    const check = el("input",{attrs:{type:"checkbox"}});
+    check.checked = item.lastPrayed === todayStr();
+    check.onchange = async () => {
+      check.disabled = true;
+      try { await window.PrayerJourneys.markPrayed(item.journeyId, check.checked ? todayStr() : ""); }
+      catch(e) { check.checked = !check.checked; showToast(e.message); }
+      finally { check.disabled = false; }
+    };
+    label.append(check, document.createTextNode(" Prayed today")); actions.appendChild(label);
+  } else {
+    row.appendChild(el("div",{class:"meta",text:"Answered " + item.answeredDate}));
+    if(item.answerNote) row.appendChild(el("p",{text:item.answerNote}));
+  }
+  const open = el("button",{class:"journey-secondary",text:item.answered ? "Review journey" : "Open journey",attrs:{type:"button"}});
+  open.onclick = () => openPrayerJourney(item.journeyId); actions.appendChild(open);
+  row.appendChild(actions); return row;
+}
 function itemRow(item){
+  if(item.journeyId) return journeyRow(item);
   const today = todayStr();
   let prayedNow;
   if(item.frequency === "daily") prayedNow = item.lastPrayed === today;
@@ -1391,6 +1448,7 @@ function itemRow(item){
 }
 
 function answeredRow(item){
+  if(item.journeyId) return journeyRow(item);
   const wrap = el("div",{class:"answered-row"});
   wrap.appendChild(el("div",{class:"person", text:item.person}));
   if(item.need && item.need.trim()) wrap.appendChild(el("div",{class:"need", text:item.need}));
@@ -1456,7 +1514,7 @@ function renderListsByFrequency(){
 
   // Update chip counts and active state
   ["daily","weekly","monthly","annual"].forEach(freq=>{
-    const count = data.items.filter(i=>i.frequency===freq && !i.answered).length;
+    const count = prayerItems().filter(i=>i.frequency===freq && !i.answered).length;
     const countEl = document.getElementById("count-"+freq);
     if(countEl) countEl.textContent = count > 0 ? count : "";
     const chip = document.querySelector('.freq-chip[data-freq="'+freq+'"]');
@@ -1486,8 +1544,8 @@ function renderListsByFrequency(){
 
   const container = document.getElementById("filteredList");
   container.innerHTML = "";
-  const totalForFreq = data.items.filter(i=>i.frequency===activeFreqFilter && !i.answered).length;
-  let items = data.items.filter(i=>i.frequency===activeFreqFilter && !i.answered && matchesSearch(i));
+  const totalForFreq = prayerItems().filter(i=>i.frequency===activeFreqFilter && !i.answered).length;
+  let items = prayerItems().filter(i=>i.frequency===activeFreqFilter && !i.answered && matchesSearch(i));
   if(activeCategoryFilter !== "all"){
     items = items.filter(i=>i.category===activeCategoryFilter);
   }
@@ -1508,10 +1566,11 @@ function renderAnsweredList(){
   const section = document.getElementById("section-answered");
   if(!container) return;
   container.innerHTML = "";
-  const totalAnswered = data.items.filter(i=>i.answered).length;
-  const items = data.items
+  const totalAnswered = prayerItems().filter(i=>i.answered).length;
+  const items = prayerItems()
     .filter(i=>i.answered && matchesSearch(i))
     .sort((a,b)=> (b.answeredDate||"").localeCompare(a.answeredDate||""));
+  document.getElementById("answeredCount").textContent = searchTerm ? items.length + " of " + totalAnswered : String(totalAnswered);
 
   if(totalAnswered === 0 && !searchTerm){
     if(section) section.style.display = "none";
@@ -1526,7 +1585,15 @@ function renderAnsweredList(){
   items.forEach(item=>container.appendChild(answeredRow(item)));
 }
 
+let todayRenderedDate = todayStr();
+function refreshPrayerDay(){
+  if(todayRenderedDate !== todayStr()) renderToday();
+}
+window.addEventListener("focus", refreshPrayerDay);
+document.addEventListener("visibilitychange", () => { if(!document.hidden) refreshPrayerDay(); });
+setInterval(refreshPrayerDay, 60000);
 function renderToday(){
+  todayRenderedDate = todayStr();
   const now = new Date();
   document.getElementById("todayLabel").textContent =
     now.toLocaleDateString(undefined,{weekday:"long", year:"numeric", month:"long", day:"numeric"});
@@ -1546,12 +1613,26 @@ function renderToday(){
 
   // daily
   const dailyWrap = document.getElementById("dailyList");
+  const completedOpen = dailyWrap.querySelector("details")?.open || false;
   dailyWrap.innerHTML = "";
-  const dailyItems = data.items.filter(i=>i.frequency==="daily" && !i.answered);
+  const dailyItems = prayerItems().filter(i=>i.frequency==="daily" && !i.answered);
+  const remainingDaily = dailyItems.filter(i=>i.lastPrayed!==todayStr());
+  const completedDaily = dailyItems.filter(i=>i.lastPrayed===todayStr());
   if(dailyItems.length===0){
     dailyWrap.appendChild(el("div",{class:"empty", text:"Add daily needs under Prayer Lists to see them here."}));
   } else {
-    dailyItems.forEach(i=>dailyWrap.appendChild(itemRow(i)));
+    remainingDaily.forEach(i=>dailyWrap.appendChild(itemRow(i)));
+    if(!remainingDaily.length) dailyWrap.appendChild(el("div",{class:"empty",text:"You've prayed through your daily prayers today."}));
+    if(completedDaily.length){
+      const completed = el("details");
+      completed.open = completedOpen;
+      const summary = el("summary",{text:"Prayed today ("+completedDaily.length+")"});
+      summary.style.cssText = "cursor:pointer;padding:12px 0;font-weight:600";
+      completed.appendChild(summary);
+      completed.appendChild(el("p",{class:"meta",text:"Uncheck Prayed today to return a prayer to your list."}));
+      completedDaily.forEach(i=>completed.appendChild(itemRow(i)));
+      dailyWrap.appendChild(completed);
+    }
   }
 
   // weekly - today's category
@@ -1564,7 +1645,7 @@ function renderToday(){
     : "Add categories under Prayer Lists to rotate through the week.";
   const weeklyWrap = document.getElementById("weeklyList");
   weeklyWrap.innerHTML = "";
-  const weeklyItems = data.items.filter(i=>i.frequency==="weekly" && i.category===todayCategory && !i.answered);
+  const weeklyItems = prayerItems().filter(i=>i.frequency==="weekly" && i.category===todayCategory && !i.answered);
   if(weeklyItems.length===0){
     weeklyWrap.appendChild(el("div",{class:"empty", text:"Nothing in this category yet — add someone under Prayer Lists."}));
   } else {
@@ -1595,7 +1676,7 @@ function renderToday(){
   const goalsWrap = document.getElementById("todayGoalsList");
   goalsWrap.innerHTML = "";
   if(data.weeklyGoals.length===0){
-    goalsWrap.appendChild(el("div",{class:"empty", text:"Add weekly goals under Guidance."}));
+    goalsWrap.appendChild(el("div",{class:"empty", text:"Add weekly goals under Discipleship."}));
   } else {
     data.weeklyGoals.forEach(g=>{
       const row = el("div",{class:"item-row"});
@@ -1623,13 +1704,42 @@ function simpleGoalRow(goal, arrKey){
     renderGuidance();
   });
   const name = el("span",{class:"name"+(goal.done?" done":""), text:goal.text});
+  const edit = el("button",{class:"journey-secondary",text:"Edit",attrs:{type:"button","aria-label":"Edit goal: "+goal.text}});
+  edit.addEventListener("click", ()=>{
+    const form = el("form",{attrs:{style:"width:100%"}});
+    const id = "edit-goal-"+goal.id;
+    const label = el("label",{text:arrKey==="lifeGoals"?"Edit life goal":"Edit monthly goal",attrs:{for:id}});
+    const input = el("textarea",{attrs:{id,rows:"3",required:"",style:"display:block;width:100%;box-sizing:border-box;font:inherit;padding:12px;margin:10px 0;border:1px solid var(--rule);border-radius:10px;background:var(--paper-light);color:var(--ink)"}});
+    input.value=goal.text;
+    const message=el("p",{attrs:{role:"status"}});
+    const save=el("button",{class:"journey-primary",text:"Save",attrs:{type:"submit"}});
+    const cancel=el("button",{class:"journey-secondary",text:"Cancel",attrs:{type:"button",style:"margin-left:8px"}});
+    const close=()=>{row.replaceChildren(cb,name,edit,del);edit.focus();};
+    cancel.onclick=close;
+    input.oninput=()=>input.setCustomValidity("");
+    form.onkeydown=e=>{if(e.key==="Escape"&&!save.disabled){e.preventDefault();close();}};
+    form.onsubmit=async e=>{
+      e.preventDefault();const text=input.value.trim();
+      if(!text){input.setCustomValidity("Please enter a goal.");input.reportValidity();return;}
+      const previous=goal.text;
+      save.disabled=cancel.disabled=input.disabled=true;message.textContent="Saving…";
+      goal.text=text;
+      if(await saveData()){
+        name.textContent=text;edit.setAttribute("aria-label","Edit goal: "+text);close();showToast("Goal updated.");
+      }else{
+        goal.text=previous;message.textContent="Not saved. Your edit is still here. Please try again.";
+        save.disabled=cancel.disabled=input.disabled=false;
+      }
+    };
+    form.append(label,input,save,cancel,message);row.replaceChildren(form);input.focus();
+  });
   const del = el("button",{class:"del", text:"×"});
   del.addEventListener("click", async ()=>{
     data[arrKey] = data[arrKey].filter(g=>g.id!==goal.id);
     await saveData();
     renderGuidance();
   });
-  row.appendChild(cb); row.appendChild(name); row.appendChild(del);
+  row.appendChild(cb); row.appendChild(name); row.appendChild(edit); row.appendChild(del);
   return row;
 }
 
@@ -1986,6 +2096,7 @@ async function startApp(){
   renderAll();
   showApp();
   renderTurnstile();
+  await window.PrayerJourneys.start(getSessionToken(), {categories: () => data.categories, onUpdate: () => { renderListsByFrequency(); renderAnsweredList(); renderToday(); }});
 }
 
 function renderTurnstile(){
@@ -2061,7 +2172,9 @@ async function verifyMagicLink(token){
 
 (async function init(){
   document.getElementById("sendLinkBtn").addEventListener("click", sendMagicLink);
-  document.getElementById("signOutBtn").addEventListener("click", ()=>{
+  document.getElementById("signOutBtn").addEventListener("click", async ()=>{
+    try { await window.PrayerJourneys.save(); } catch(e) { showToast("Please save your Guided Prayer before signing out. " + e.message); return; }
+    window.PrayerJourneys.reset();
     clearSessionToken();
     document.getElementById("authStep1").style.display = "block";
     document.getElementById("authStep2").style.display = "none";
@@ -2069,9 +2182,10 @@ async function verifyMagicLink(token){
     showAuthScreen("");
   });
 
-  document.getElementById("exportDataBtn").addEventListener("click", ()=>{
+  document.getElementById("exportDataBtn").addEventListener("click", async ()=>{
     try{
-      const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+      const prayerJourneys = await window.PrayerJourneys.exportData();
+      const blob = new Blob([JSON.stringify({...data, prayerJourneys}, null, 2)], {type: "application/json"});
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -2104,6 +2218,7 @@ async function verifyMagicLink(token){
             throw new Error(json.error || "Could not delete your data.");
           }
           clearSessionToken();
+          window.PrayerJourneys.reset();
           showAuthScreen("Your account and data have been deleted.");
         }catch(e){
           showToast(e.message || "Could not delete your data. Try again.");
@@ -2130,5 +2245,12 @@ async function verifyMagicLink(token){
   showAuthScreen("");
 })();
 </script>
+<details style="max-width:640px;margin:24px auto;padding:0 20px;font-size:.8rem;color:var(--ink)">
+<summary>Scripture attribution</summary>
+<p>Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), © 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved. The ESV text may not be quoted in any publication made available to the public by a Creative Commons license. The ESV may not be translated into any other language.</p>
+<p>Users may not copy or download more than 500 verses of the ESV Bible or more than one half of any book of the ESV Bible.</p>
+<p><a href="https://www.esv.org/" target="_blank" rel="noopener noreferrer">ESV.org</a></p>
+</details>
 </body>
 </html>
+
